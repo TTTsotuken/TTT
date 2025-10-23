@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>翻訳＆学習アプリ-メイン画面</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* マイクアクティブ時のアニメーション */
+        .listening-active {
+            animation: pulse-ring 1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse-ring {
+            0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(99, 102, 241, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen p-4 sm:p-8">
+
+    <div class="max-w-4xl mx-auto bg-white p-6 sm:p-10 rounded-xl shadow-2xl">
+        <h1 class="text-3xl font-extrabold text-indigo-700 mb-6 border-b pb-2">翻訳＆学習アプリ</h1>
+
+        <div class="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-4 mb-6">
+            <div class="flex-1 w-full">
+                <label for="source-lang" class="block text-sm font-medium text-gray-700">翻訳元言語</label>
+                <select id="source-lang" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-pink-500 focus:border-pink-500 sm:text-sm rounded-md shadow-sm"></select>
+            </div>
+            <button id="swap-button" class="p-2 bg-gray-200 hover:bg-gray-300 rounded-full transition duration-150 shadow-md">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                </svg>
+            </button>
+            <div class="flex-1 w-full">
+                <label for="target-lang" class="block text-sm font-medium text-gray-700">翻訳先言語</label>
+                <select id="target-lang" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm"></select>
+            </div>
+        </div>
+
+        <div class="bg-gray-50 p-6 rounded-lg shadow-inner mb-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 id="input-title" class="text-xl font-semibold text-gray-800">翻訳元テキスト (入力/音声)</h2>
+                <div class="flex items-center space-x-2">
+                    <button id="mic-button" class="p-3 bg-pink-600 hover:bg-pink-700 rounded-full text-white shadow-lg transition duration-150 focus:outline-none focus:ring-4 focus:ring-pink-300">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7v0a7 7 0 01-7-7v0a7 7 0 0114 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 21v-1m0-16V3" />
+                        </svg>
+                    </button>
+                    <label id="image-upload-label" class="p-3 bg-blue-600 hover:bg-blue-700 rounded-full text-white shadow-lg cursor-pointer transition duration-150 focus:outline-none focus:ring-4 focus:ring-blue-300">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <input type="file" id="image-upload" accept="image/*" class="hidden">
+                    </label>
+                    <button id="clear-image-button" class="p-3 bg-red-500 hover:bg-red-600 rounded-full text-white shadow-lg hidden transition duration-150 focus:outline-none focus:ring-4 focus:ring-red-300">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <textarea id="input-text" rows="4" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 shadow-sm transition duration-150" placeholder="翻訳したいテキストを入力するか、マイクボタンを押して話してください。"></textarea>
+
+            <div id="image-preview-container" class="hidden border border-gray-300 rounded-lg overflow-hidden max-h-64 flex justify-center items-center bg-white p-2">
+                <img id="image-preview" src="" alt="Image Preview" class="max-h-full object-contain">
+            </div>
+
+            <div id="input-status" class="mt-2 text-sm text-gray-500 h-5"></div>
+        </div>
+
+        <div class="mt-8">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">翻訳結果</h2>
+            <div id="output-text" class="min-h-[100px] p-4 bg-gray-50 border border-gray-300 rounded-lg text-lg text-gray-800 whitespace-pre-wrap shadow-inner">
+                翻訳結果がここに表示されます。
+            </div>
+            
+            <div id="loading-indicator" class="hidden mt-4 flex items-center justify-center text-indigo-600">
+                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                翻訳中...
+            </div>
+            
+            <div id="error-message" class="hidden mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+                エラーが発生しました。APIキーの確認や、入力内容の調整を試みてください。
+            </div>
+        </div>
+        
+        <div class="mt-8 bg-gray-50 p-4 rounded-lg shadow-inner">
+            <h3 class="text-xl font-semibold text-indigo-700 mb-4">学習モード</h3>
+            <div class="flex space-x-4 flex-wrap">
+                <a href="wordbook.html" id="wordbook-link" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition duration-150 mb-2 sm:mb-0">
+                    単語帳を管理
+                </a>
+                <a href="flashcard.html" id="flashcard-link" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg transition duration-150 mb-2 sm:mb-0">
+                    フラッシュカード学習
+                </a>
+                <a href="quiz.html" id="quiz-link" class="bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded-lg transition duration-150 mb-2 sm:mb-0">
+                    穴埋めクイズに挑戦
+                </a>
+                <a href="log.html" id="log-link" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition duration-150 mb-2 sm:mb-0">
+                    翻訳ログ
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script src="main.js"></script>
+
+</body>
+</html>

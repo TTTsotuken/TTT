@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+
+<html lang="ja">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>単語帳管理</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+</head>
+
+<body class="bg-gray-100 min-h-screen p-4 sm:p-8">
+
+    <div class="max-w-3xl mx-auto bg-white p-6 sm:p-10 rounded-xl shadow-2xl">
+
+        <h1 class="text-3xl font-extrabold text-green-700 mb-6 border-b pb-2">単語帳管理</h1>
+
+        <a href="honyaku.html" class="inline-block mb-4 text-indigo-500 hover:text-indigo-700">&larr; メイン画面に戻る</a>
+
+        
+
+        <div id="wordbook-container" class="mt-4 bg-white border border-gray-300 rounded-lg shadow-md">
+
+            <div class="p-3 bg-gray-100 border-b flex justify-between items-center">
+
+                <h4 id="wordbook-title" class="font-semibold text-gray-700">単語帳リスト (0件)</h4>
+
+                <button id="delete-selected-button" class="text-red-500 hover:text-red-700 text-sm font-medium disabled:opacity-50" disabled>
+
+                    選択した単語を削除
+
+                </button>
+
+            </div>
+
+            <ul id="wordbook-list" class="divide-y divide-gray-200">
+
+                <p class="text-gray-500 text-sm p-3">単語帳に登録された単語はありません。</p>
+
+            </ul>
+
+        </div>
+
+    </div>

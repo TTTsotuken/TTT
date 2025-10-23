@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>リアルタイム音声＆画像翻訳アプリ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* インターフォントを使用 */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            /* 背景を明るく、清潔に保つ */
+            background-color: #f4f7f9; 
+        }
+        /* カスタムスクロールバーの色をメインカラーに合わせる */
+        .custom-scroll::-webkit-scrollbar {
+            width: 8px;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background-color: #6366f1; /* indigo-500 */
+            border-radius: 4px;
+        }
+        .custom-scroll::-webkit-scrollbar-track {
+            background: #e5e7eb; /* gray-200 */
+        }
+        /* マイクボタンが押されているときのスタイル (鮮やかなピンクに変更) */
+        .listening-active {
+            animation: pulse-ring 1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse-ring {
+            0%, 100% {
+                /* 鮮やかなピンクの影 */
+                box-shadow: 0 0 0 0 rgba(236, 72, 153, 0.7); /* pink-500 */
+            }
+            50% {
+                box-shadow: 0 0 0 10px rgba(236, 72, 153, 0);
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="app" class="min-h-screen p-4 md:p-8 flex flex-col items-center">
+        
+        <header class="w-full max-w-4xl mb-8 p-6 bg-indigo-700 rounded-b-xl shadow-2xl">
+            <h1 class="text-4xl font-extrabold text-white text-center mb-1">リアルタイム翻訳</h1>
+            <p class="text-center text-indigo-200">テキスト入力、音声、画像の文字をAIがすぐに翻訳します。</p>
+        </header>
+
+        <div class="w-full max-w-4xl flex flex-col md:flex-row gap-4 mb-6">
+            <div class="flex-1">
+                <label for="source-lang" class="block text-sm font-medium text-gray-700 mb-1">翻訳元言語</label>
+                <select id="source-lang" class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out bg-white">
+                </select>
+            </div>
+            
+            <div class="flex items-center justify-center md:py-8">
+                <button id="swap-button" class="p-2 bg-indigo-600 text-white rounded-full shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50 transition duration-150 ease-in-out">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
+                        <path d="M17 2l4 4-4 4"/>
+                        <path d="M3 11v-1a4 4 0 0 1 4-4h14"/>
+                        <path d="M7 22l-4-4 4-4"/>
+                        <path d="M21 13v1a4 4 0 0 1-4 4H3"/>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="flex-1">
+                <label for="target-lang" class="block text-sm font-medium text-gray-700 mb-1">翻訳先言語</label>
+                <select id="target-lang" class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out bg-white">
+                </select>
+            </div>
+        </div>
+
+        <div class="w-full max-w-4xl grid grid-cols-1 md:grid-cols-3 gap-4 min-h-[400px]">
+            <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200 flex flex-col relative md:col-span-1">
+                <h2 class="text-lg font-semibold text-gray-800 mb-3" id="input-title">翻訳元テキスト (入力/音声)</h2>
+                
+                <div id="image-preview-container" class="mb-4 hidden">
+                    <img id="image-preview" src="" alt="アップロードされた画像" class="max-w-full h-auto rounded-lg border border-gray-300 max-h-48 mx-auto" style="object-fit: contain;">
+                </div>
+
+                <textarea 
+                    id="input-text" 
+                    placeholder="ここに翻訳したいテキストを入力するか、マイクボタンを押して話してください..."
+                    class="w-full flex-grow p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-200 resize-none custom-scroll transition duration-150 text-lg" 
+                ></textarea>
+                
+                <div class="mt-2 flex justify-between items-center">
+                    <button id="mic-button" class="p-2 rounded-full bg-pink-600 text-white shadow-md hover:bg-pink-700 focus:outline-none focus:ring-4 focus:ring-pink-300 transition duration-150 ease-in-out">
+                        <svg id="mic-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
+                            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+                            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                            <line x1="12" x2="12" y1="19" y2="22"/>
+                        </svg>
+                    </button>
+
+                    <label for="image-upload" id="image-upload-label" class="cursor-pointer p-2 rounded-full bg-emerald-500 text-white shadow-md hover:bg-emerald-600 focus:outline-none focus:ring-4 focus:ring-emerald-300 transition duration-150 ease-in-out ml-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
+                            <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
+                            <circle cx="12" cy="13" r="3"/>
+                        </svg>
+                    </label>
+                    <input type="file" id="image-upload" accept="image/*" class="hidden">
+                    
+                    <button id="clear-image-button" class="hidden p-2 rounded-full bg-gray-500 text-white shadow-md hover:bg-gray-600 focus:outline-none focus:ring-4 focus:ring-gray-300 transition duration-150 ease-in-out ml-2">
+                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                    </button>
+                    
+                    <div class="text-right text-sm text-gray-500 flex-grow" id="input-status"></div>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow-2xl border border-gray-100 flex flex-col md:col-span-2">
+                <h2 class="text-lg font-semibold text-gray-800 mb-3">翻訳結果</h2>
+                <div 
+                    id="output-text" 
+                    class="w-full flex-grow p-3 border border-gray-200 rounded-lg bg-gray-50 overflow-y-auto custom-scroll leading-relaxed text-gray-700 text-xl"
+                >
+                    翻訳結果がここに表示されます。
+                </div>
+                
+                <div class="mt-3 flex justify-end items-center">
+                    <div id="loading-indicator" class="text-sm flex items-center text-indigo-600 hidden">
+                        <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        翻訳中...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="error-message" class="w-full max-w-4xl mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg hidden" role="alert">
+            エラーが発生しました。時間を置いて再試行してください。
+        </div>
+
+    </div>
+
+    <script src="app.js"></script> 
+</body>
+</html>

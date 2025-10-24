@@ -18,26 +18,19 @@
 
     <script>
         // 🔥 ここにFirebaseの設定を貼り付けてください
-    const firebaseConfig = {
-        apiKey: "AIzaSyDLsRsitmY4uPX6a_-RTtq1X1EfQW4L7Uw",
-        authDomain: "translation-chat-561ae.firebaseapp.com",
-        databaseURL: "https://translation-chat-561ae-default-rtdb.asia-southeast1.firebasedatabase.app",
-        projectId: "translation-chat-561ae",
-        storageBucket: "translation-chat-561ae.firebasestorage.app",
-        messagingSenderId: "731320381667",
-        appId: "1:731320381667:web:9b256ebf09de1e935455d6"
-    };
-
+const firebaseConfig = {
+  apiKey: "AIzaSyDLsRsitmY4uPX6a_-RTtq1X1EfQW4L7Uw",
+  authDomain: "translation-chat-561ae.firebaseapp.com",
+  databaseURL: "https://translation-chat-561ae-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "translation-chat-561ae",
+  storageBucket: "translation-chat-561ae.firebasestorage.app",
+  messagingSenderId: "731320381667",
+  appId: "1:731320381667:web:9b256ebf09de1e935455d6"
+};
 
         // Firebaseを初期化
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
-
-// 🤖 Gemini APIキー（Google AI Studioから取得）
-        // https://makersuite.google.com/app/apikey
-        const GEMINI_API_KEY = "AIzaSyBSnVC1nRpYx3L7uzUPOw7dgJlvCCqQ840";
-        const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
-        
     </script>
 
     <script type="text/babel">
@@ -188,49 +181,15 @@
                 setTimeout(() => setSuccess(''), 3000);
             };
 
-            // Gemini APIを使用した翻訳
-            const translateText = async (text, targetLangCode) => {
-                const targetLang = languages.find(l => l.code === targetLangCode);
-                if (!targetLang) return text;
-
+            const translateText = async (text, targetLang) => {
                 try {
-                    setIsTranslating(true);
-                    
-                    const prompt = `Translate the following text to ${targetLang.geminiCode}. Only provide the translation, no explanations or additional text:\n\n${text}`;
-
-                    const response = await fetch(GEMINI_API_URL, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            contents: [{
-                                parts: [{
-                                    text: prompt
-                                }]
-                            }],
-                            generationConfig: {
-                                temperature: 0.3,
-                                maxOutputTokens: 1000,
-                            }
-                        })
-                    });
-
-                    if (!response.ok) {
-                        const errorData = await response.json();
-                        console.error('Gemini API error:', errorData);
-                        throw new Error(`API error: ${response.status}`);
-                    }
-
+                    const response = await fetch(
+                        `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`
+                    );
                     const data = await response.json();
-                    const translatedText = data.candidates[0].content.parts[0].text.trim();
-                    
-                    setIsTranslating(false);
-                    return translatedText;
+                    return data[0][0][0];
                 } catch (error) {
                     console.error('Translation error:', error);
-                    setIsTranslating(false);
-                    showError('翻訳に失敗しました。APIキーを確認してください。');
                     return text;
                 }
             };

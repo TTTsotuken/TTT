@@ -19,4 +19,4 @@ const database = firebase.database();
 // Google AI Studioから取得したAPIキーを入力してください
 // https://makersuite.google.com/app/apikey
 const GEMINI_API_KEY = "AIzaSyBSnVC1nRpYx3L7uzUPOw7dgJlvCCqQ840";
-const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
+const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`;

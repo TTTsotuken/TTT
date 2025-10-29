@@ -126,7 +126,7 @@
             </svg>
         );
 
-const TranslationChatApp = () => {
+        const TranslationChatApp = () => {
             const [screen, setScreen] = useState('login');
             const [loginTab, setLoginTab] = useState('login');
             const [roomId, setRoomId] = useState('');
@@ -143,10 +143,13 @@ const TranslationChatApp = () => {
             const [roomUsers, setRoomUsers] = useState([]);
             const [isConnected, setIsConnected] = useState(true);
             const [isTranslating, setIsTranslating] = useState(false);
+            const [currentUserId, setCurrentUserId] = useState(null);
             const messagesEndRef = useRef(null);
             const recognitionRef = useRef(null);
             const messagesListenerRef = useRef(null);
             const usersListenerRef = useRef(null);
+            const inactivityTimerRef = useRef(null);
+            const lastActivityRef = useRef(Date.now());
 
             const languages = [
                 { code: 'ja', name: '日本語', geminiCode: 'Japanese' },
@@ -173,6 +176,88 @@ const TranslationChatApp = () => {
                 });
                 return () => connectedRef.off();
             }, []);
+
+            // ルーム削除の監視（ログイン中の場合）
+            useEffect(() => {
+                if (!currentRoom) return;
+
+                const roomRef = database.ref(`rooms/${currentRoom.id}`);
+                const roomListener = roomRef.on('value', (snapshot) => {
+                    if (!snapshot.exists()) {
+                        // ルームが削除された
+                        showError('ルームが削除されました。ログアウトします。');
+                        setTimeout(() => {
+                            handleLogout();
+                        }, 2000);
+                    }
+                });
+
+                return () => {
+                    roomRef.off('value', roomListener);
+                };
+            }, [currentRoom]);
+
+            // タブを閉じた時の処理
+            useEffect(() => {
+                if (!currentRoom || !currentUserId) return;
+
+                const handleBeforeUnload = async () => {
+                    // ユーザーをルームから削除
+                    const userRef = database.ref(`rooms/${currentRoom.id}/users/${currentUserId}`);
+                    await userRef.remove();
+                };
+
+                window.addEventListener('beforeunload', handleBeforeUnload);
+
+                return () => {
+                    window.removeEventListener('beforeunload', handleBeforeUnload);
+                    // コンポーネントがアンマウントされた時もユーザーを削除
+                    if (currentRoom && currentUserId) {
+                        database.ref(`rooms/${currentRoom.id}/users/${currentUserId}`).remove();
+                    }
+                };
+            }, [currentRoom, currentUserId]);
+
+            // 15分間非アクティブでログアウト
+            useEffect(() => {
+                if (!currentRoom) return;
+
+                const INACTIVITY_TIMEOUT = 15 * 60 * 1000; // 15分
+
+                const resetTimer = () => {
+                    lastActivityRef.current = Date.now();
+                    
+                    if (inactivityTimerRef.current) {
+                        clearTimeout(inactivityTimerRef.current);
+                    }
+
+                    inactivityTimerRef.current = setTimeout(() => {
+                        showError('15分間操作がなかったため、自動的にログアウトします。');
+                        setTimeout(() => {
+                            handleLogout();
+                        }, 2000);
+                    }, INACTIVITY_TIMEOUT);
+                };
+
+                // 初回タイマー設定
+                resetTimer();
+
+                // アクティビティを検知するイベント
+                const events = ['mousedown', 'keydown', 'scroll', 'touchstart', 'click'];
+                
+                events.forEach(event => {
+                    window.addEventListener(event, resetTimer);
+                });
+
+                return () => {
+                    if (inactivityTimerRef.current) {
+                        clearTimeout(inactivityTimerRef.current);
+                    }
+                    events.forEach(event => {
+                        window.removeEventListener(event, resetTimer);
+                    });
+                };
+            }, [currentRoom]);
 
             useEffect(() => {
                 messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -257,7 +342,7 @@ const TranslationChatApp = () => {
                     return;
                 }
 
-                if (GEMINI_API_KEY === 'YOUR_GEMINI_API_KEY') {
+                if (GEMINI_API_KEY === '') {
                     showError('Gemini APIキーが設定されていません');
                     return;
                 }
@@ -277,13 +362,14 @@ const TranslationChatApp = () => {
                         const usersList = Object.values(users);
                         const existingUserEntry = Object.entries(users).find(([_, u]) => u.name === userName);
                         
+                        let userId;
                         if (!existingUserEntry) {
                             if (usersList.length >= 2) {
                                 showError('このルームは既に満員です（最大2人）');
                                 return;
                             }
                             
-                            const userId = `user_${Date.now()}`;
+                            userId = `user_${Date.now()}`;
                             await database.ref(`rooms/${roomId}/users/${userId}`).set({
                                 name: userName,
                                 language: userLanguage,
@@ -291,8 +377,10 @@ const TranslationChatApp = () => {
                             });
                             showSuccess('ルームに参加しました！');
                         } else {
+                            userId = existingUserEntry[0];
                             showSuccess('ルームに再接続しました！');
                         }
+                        setCurrentUserId(userId);
                     } else {
                         const userId = `user_${Date.now()}`;
                         await roomRef.set({
@@ -306,6 +394,7 @@ const TranslationChatApp = () => {
                                 }
                             }
                         });
+                        setCurrentUserId(userId);
                         showSuccess('新しいルームを作成しました！');
                     }
 
@@ -402,6 +491,10 @@ const TranslationChatApp = () => {
                 recognitionRef.current.onresult = (event) => {
                     const transcript = event.results[0][0].transcript;
                     setMessage(transcript);
+                    // 音声認識完了後、少し待ってから自動的に入力欄に反映
+                    setTimeout(() => {
+                        setIsRecording(false);
+                    }, 100);
                 };
 
                 recognitionRef.current.onerror = (event) => {
@@ -436,20 +529,22 @@ const TranslationChatApp = () => {
                     database.ref(`rooms/${currentRoom.id}/users`).off('value', usersListenerRef.current);
                 }
                 
-                if (currentRoom) {
-                    const usersRef = database.ref(`rooms/${currentRoom.id}/users`);
-                    const snapshot = await usersRef.once('value');
-                    const users = snapshot.val() || {};
-                    
-                    Object.entries(users).forEach(([userId, user]) => {
-                        if (user.name === userName) {
-                            database.ref(`rooms/${currentRoom.id}/users/${userId}`).remove();
-                        }
-                    });
+                if (currentRoom && currentUserId) {
+                    try {
+                        await database.ref(`rooms/${currentRoom.id}/users/${currentUserId}`).remove();
+                    } catch (error) {
+                        console.error('Error removing user:', error);
+                    }
+                }
+
+                // タイマーをクリア
+                if (inactivityTimerRef.current) {
+                    clearTimeout(inactivityTimerRef.current);
                 }
                 
                 setScreen('login');
                 setCurrentRoom(null);
+                setCurrentUserId(null);
                 setMessages([]);
                 setRoomUsers([]);
                 setRoomId('');
@@ -465,6 +560,49 @@ const TranslationChatApp = () => {
                     showSuccess('メッセージを削除しました');
                 } catch (error) {
                     showError('メッセージの削除に失敗しました');
+                }
+            };
+
+            const handleDeleteRoom = async () => {
+                if (!roomId || !password || !confirmPassword) {
+                    showError('全ての項目を入力してください');
+                    return;
+                }
+
+                if (password !== confirmPassword) {
+                    showError('パスワードが一致しません');
+                    return;
+                }
+
+                if (!isConnected) {
+                    showError('インターネット接続を確認してください');
+                    return;
+                }
+
+                try {
+                    const roomRef = database.ref(`rooms/${roomId}`);
+                    const roomSnapshot = await roomRef.once('value');
+                    const roomData = roomSnapshot.val();
+
+                    if (!roomData) {
+                        showError('指定されたルームが見つかりません');
+                        return;
+                    }
+
+                    if (roomData.password !== password) {
+                        showError('パスワードが正しくありません');
+                        return;
+                    }
+
+                    // ルーム全体を削除
+                    await roomRef.remove();
+                    showSuccess('ルームを削除しました');
+                    setRoomId('');
+                    setPassword('');
+                    setConfirmPassword('');
+                } catch (error) {
+                    console.error('Delete room error:', error);
+                    showError('ルームの削除に失敗しました: ' + error.message);
                 }
             };
 
@@ -487,94 +625,197 @@ const TranslationChatApp = () => {
                                     ⚠️ オフライン - インターネット接続を確認してください
                                 </div>
                             )}
-                            
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        ルームID
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={roomId}
-                                        onChange={(e) => setRoomId(e.target.value)}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                                        placeholder="例: room123"
-                                    />
-                                </div>
 
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        パスワード
-                                    </label>
-                                    <input
-                                        type="password"
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                                        placeholder="••••••"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        ユーザー名
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={userName}
-                                        onChange={(e) => setUserName(e.target.value)}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                                        placeholder="例: 太郎"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        あなたの言語
-                                    </label>
-                                    <select
-                                        value={userLanguage}
-                                        onChange={(e) => setUserLanguage(e.target.value)}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                                    >
-                                        {languages.map(lang => (
-                                            <option key={lang.code} value={lang.code}>{lang.name}</option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                {error && (
-                                    <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-                                        {error}
-                                    </div>
-                                )}
-
-                                {success && (
-                                    <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm flex items-center">
-                                        <CheckCircle />
-                                        <span className="ml-2">{success}</span>
-                                    </div>
-                                )}
-
+                            {/* タブ切り替え */}
+                            <div className="flex mb-6 border-b border-gray-200">
                                 <button
-                                    onClick={handleLogin}
-                                    disabled={!isConnected}
-                                    className="w-full bg-indigo-600 text-white py-3 rounded-lg font-medium hover:bg-indigo-700 transition-colors flex items-center justify-center disabled:bg-gray-400 disabled:cursor-not-allowed"
+                                    onClick={() => {
+                                        setLoginTab('login');
+                                        setError('');
+                                        setSuccess('');
+                                    }}
+                                    className={`flex-1 py-3 font-medium transition-colors ${
+                                        loginTab === 'login'
+                                            ? 'text-indigo-600 border-b-2 border-indigo-600'
+                                            : 'text-gray-500 hover:text-gray-700'
+                                    }`}
                                 >
-                                    <span className="mr-2"><Lock /></span>
-                                    ルームに入る
+                                    ログイン
                                 </button>
-
-                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
-                                    <p className="font-medium mb-2">💡 使い方</p>
-                                    <ul className="list-disc list-inside space-y-1 text-xs">
-                                        <li>同じルームIDとパスワードで2人が入室</li>
-                                        <li>Gemini AIが文脈を理解して高品質な翻訳を提供</li>
-                                        <li>異なるデバイスからでもアクセス可能</li>
-                                        <li>音声入力にも対応（Chrome推奨）</li>
-                                    </ul>
-                                </div>
+                                <button
+                                    onClick={() => {
+                                        setLoginTab('delete');
+                                        setError('');
+                                        setSuccess('');
+                                        setConfirmPassword('');
+                                    }}
+                                    className={`flex-1 py-3 font-medium transition-colors ${
+                                        loginTab === 'delete'
+                                            ? 'text-red-600 border-b-2 border-red-600'
+                                            : 'text-gray-500 hover:text-gray-700'
+                                    }`}
+                                >
+                                    ルーム削除
+                                </button>
                             </div>
+                            
+                            {loginTab === 'login' ? (
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            ルームID
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={roomId}
+                                            onChange={(e) => setRoomId(e.target.value)}
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                            placeholder="例: room123"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            パスワード
+                                        </label>
+                                        <input
+                                            type="password"
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                            placeholder="••••••"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            ユーザー名
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={userName}
+                                            onChange={(e) => setUserName(e.target.value)}
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                            placeholder="例: 太郎"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            あなたの言語
+                                        </label>
+                                        <select
+                                            value={userLanguage}
+                                            onChange={(e) => setUserLanguage(e.target.value)}
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                        >
+                                            {languages.map(lang => (
+                                                <option key={lang.code} value={lang.code}>{lang.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {error && (
+                                        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                                            {error}
+                                        </div>
+                                    )}
+
+                                    {success && (
+                                        <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm flex items-center">
+                                            <CheckCircle />
+                                            <span className="ml-2">{success}</span>
+                                        </div>
+                                    )}
+
+                                    <button
+                                        onClick={handleLogin}
+                                        disabled={!isConnected}
+                                        className="w-full bg-indigo-600 text-white py-3 rounded-lg font-medium hover:bg-indigo-700 transition-colors flex items-center justify-center disabled:bg-gray-400 disabled:cursor-not-allowed"
+                                    >
+                                        <span className="mr-2"><Lock /></span>
+                                        ルームに入る
+                                    </button>
+
+                                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
+                                        <p className="font-medium mb-2">💡 使い方</p>
+                                        <ul className="list-disc list-inside space-y-1 text-xs">
+                                            <li>同じルームIDとパスワードで2人が入室</li>
+                                            <li>Gemini AIが文脈を理解して高品質な翻訳を提供</li>
+                                            <li>異なるデバイスからでもアクセス可能</li>
+                                            <li>音声入力にも対応（Chrome推奨）</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-800">
+                                        <p className="font-medium mb-2">⚠️ 警告</p>
+                                        <p className="text-xs">ルームを削除すると、全てのメッセージとユーザー情報が完全に削除されます。この操作は元に戻せません。</p>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            削除するルームID
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={roomId}
+                                            onChange={(e) => setRoomId(e.target.value)}
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                                            placeholder="例: room123"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            パスワード
+                                        </label>
+                                        <input
+                                            type="password"
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                                            placeholder="••••••"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            パスワード（確認）
+                                        </label>
+                                        <input
+                                            type="password"
+                                            value={confirmPassword}
+                                            onChange={(e) => setConfirmPassword(e.target.value)}
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                                            placeholder="••••••"
+                                        />
+                                    </div>
+
+                                    {error && (
+                                        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                                            {error}
+                                        </div>
+                                    )}
+
+                                    {success && (
+                                        <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm flex items-center">
+                                            <CheckCircle />
+                                            <span className="ml-2">{success}</span>
+                                        </div>
+                                    )}
+
+                                    <button
+                                        onClick={handleDeleteRoom}
+                                        disabled={!isConnected}
+                                        className="w-full bg-red-600 text-white py-3 rounded-lg font-medium hover:bg-red-700 transition-colors flex items-center justify-center disabled:bg-gray-400 disabled:cursor-not-allowed"
+                                    >
+                                        <span className="mr-2"><Trash2 /></span>
+                                        ルームを完全に削除
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </div>
                 );

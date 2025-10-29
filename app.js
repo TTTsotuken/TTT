@@ -424,3 +424,141 @@ class TranslationChatApp {
           </div>
         </div>
       </div>
+      ` : `
+
+
+        
+              <button id="btn-login" class="w-full bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 transition">入室 / 作成</button>
+            </div>
+          ` : `
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">ルームID</label>
+                <input type="text" id="roomId" value="${roomId}" class="w-full px-4 py-2 border border-gray-300 rounded-lg" placeholder="例: room123">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">パスワード</label>
+                <input type="password" id="password" value="${password}" class="w-full px-4 py-2 border border-gray-300 rounded-lg" placeholder="••••••">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">確認用パスワード</label>
+                <input type="password" id="confirmPassword" value="${confirmPassword}" class="w-full px-4 py-2 border border-gray-300 rounded-lg" placeholder="もう一度入力">
+              </div>
+              <button id="btn-delete-room" class="w-full bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition">ルーム削除</button>
+            </div>
+          `}
+        </div>
+      </div>
+    `;
+  }
+
+  attachLoginEvents() {
+    document.getElementById('tab-login').addEventListener('click', () => this.setState({ loginTab: 'login' }));
+    document.getElementById('tab-delete').addEventListener('click', () => this.setState({ loginTab: 'delete' }));
+    
+    const btnLogin = document.getElementById('btn-login');
+    const btnDelete = document.getElementById('btn-delete-room');
+
+    if (btnLogin) {
+      btnLogin.addEventListener('click', () => {
+        this.setState({
+          roomId: document.getElementById('roomId').value.trim(),
+          password: document.getElementById('password').value.trim(),
+          userName: document.getElementById('userName').value.trim(),
+          userLanguage: document.getElementById('userLanguage').value
+        });
+        this.handleLogin();
+      });
+    }
+
+    if (btnDelete) {
+      btnDelete.addEventListener('click', () => {
+        this.setState({
+          roomId: document.getElementById('roomId').value.trim(),
+          password: document.getElementById('password').value.trim(),
+          confirmPassword: document.getElementById('confirmPassword').value.trim()
+        });
+        this.handleDeleteRoom();
+      });
+    }
+  }
+
+  renderChatScreen() {
+    const { messages, message, isRecording, isTranslating, roomUsers, error, success } = this.state;
+    const userName = authService.currentUser?.userName || '';
+    const otherUser = roomUsers.find(u => u.name !== userName);
+    const otherLangName = otherUser ? otherUser.language : '相手未参加';
+
+    return `
+      <div class="flex flex-col h-screen bg-gray-100">
+        <div class="bg-white shadow p-4 flex justify-between items-center">
+          <div>
+            <h2 class="text-lg font-semibold text-gray-800">💬 ルーム: ${authService.currentRoom.roomId}</h2>
+            <p class="text-sm text-gray-500">相手の言語: ${otherLangName}</p>
+          </div>
+          <div class="flex gap-2">
+            <button id="btn-clear" class="bg-yellow-500 text-white px-3 py-1 rounded-lg hover:bg-yellow-600">全削除</button>
+            <button id="btn-logout" class="bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600">ログアウト</button>
+          </div>
+        </div>
+
+        <div id="chatArea" class="flex-1 overflow-y-auto p-4 space-y-3">
+          ${messages.map(msg => `
+            <div class="flex ${msg.sender === userName ? 'justify-end' : 'justify-start'}">
+              <div class="max-w-xs bg-${msg.sender === userName ? 'indigo' : 'gray'}-200 p-3 rounded-2xl shadow">
+                <p class="text-sm text-gray-700"><strong>${msg.sender}</strong></p>
+                <p class="text-gray-800">${msg.originalText}</p>
+                <p class="text-xs text-gray-500 mt-1">→ ${msg.translatedText}</p>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+
+        <div class="bg-white p-4 shadow flex items-center gap-2">
+          <input id="messageInput" type="text" value="${message}" placeholder="メッセージを入力..." class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none">
+          <button id="btn-mic" class="p-2 rounded-full ${isRecording ? 'bg-red-500' : 'bg-gray-200'}">
+            🎤
+          </button>
+          <button id="btn-send" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition">
+            ${isTranslating ? '翻訳中...' : '送信'}
+          </button>
+        </div>
+
+        ${error ? `<div class="absolute bottom-20 left-1/2 transform -translate-x-1/2 bg-red-500 text-white px-4 py-2 rounded-lg">${error}</div>` : ''}
+        ${success ? `<div class="absolute bottom-20 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-lg">${success}</div>` : ''}
+      </div>
+    `;
+  }
+
+  attachChatEvents() {
+    document.getElementById('btn-logout').addEventListener('click', () => this.handleLogout());
+    document.getElementById('btn-send').addEventListener('click', () => this.handleSendMessage());
+    document.getElementById('btn-clear').addEventListener('click', () => this.handleClearMessages());
+
+    const input = document.getElementById('messageInput');
+    input.addEventListener('input', (e) => this.setState({ message: e.target.value }));
+    input.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') this.handleSendMessage();
+    });
+
+    const micButton = document.getElementById('btn-mic');
+    micButton.addEventListener('click', () => {
+      if (this.state.isRecording) {
+        this.stopRecording();
+      } else {
+        this.startRecording();
+      }
+    });
+  }
+
+  scrollToBottom() {
+    const chatArea = document.getElementById('chatArea');
+    if (chatArea) {
+      chatArea.scrollTop = chatArea.scrollHeight;
+    }
+  }
+}
+
+// アプリ初期化
+const app = new TranslationChatApp();
+window.addEventListener('DOMContentLoaded', () => app.init());

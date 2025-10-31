@@ -7,10 +7,90 @@
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-50">
-    <div id="app"></div>
+    <div id="app">
+        <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md text-center">
+                <div class="text-6xl mb-4">⏳</div>
+                <p class="text-lg font-medium text-gray-700">読み込み中...</p>
+            </div>
+        </div>
+    </div>
     
+    <!-- 設定を最初に読み込む -->
     <script src="./js/config.js"></script>
-    <script type="module" src="./js/firebase-service.js"></script>
+    
+    <!-- Firebase Serviceを次に読み込む（type="module"が重要） -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getDatabase, ref, get, set, update, remove, onValue, off, serverTimestamp, push } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+        class FirebaseService {
+          constructor() {
+            this.app = null;
+            this.database = null;
+            this.initialized = false;
+          }
+
+          async initialize() {
+            if (this.initialized) return;
+            
+            try {
+              this.app = initializeApp(CONFIG.firebase);
+              this.database = getDatabase(this.app);
+              this.initialized = true;
+              console.log('✅ Firebase初期化完了');
+            } catch (error) {
+              console.error('❌ Firebase初期化エラー:', error);
+              throw error;
+            }
+          }
+
+          ref(path) {
+            return ref(this.database, path);
+          }
+
+          async get(path) {
+            const snapshot = await get(this.ref(path));
+            return snapshot.val();
+          }
+
+          async set(path, data) {
+            await set(this.ref(path), data);
+          }
+
+          async update(path, data) {
+            await update(this.ref(path), data);
+          }
+
+          async remove(path) {
+            await remove(this.ref(path));
+          }
+
+          onValue(path, callback) {
+            return onValue(this.ref(path), callback);
+          }
+
+          off(path, callback) {
+            off(this.ref(path), callback);
+          }
+
+          get serverTimestamp() {
+            return serverTimestamp();
+          }
+
+          push(path) {
+            return push(this.ref(path));
+          }
+        }
+
+        window.firebaseService = new FirebaseService();
+        
+        // Firebase Service読み込み完了を通知
+        window.firebaseServiceReady = true;
+        window.dispatchEvent(new Event('firebaseServiceReady'));
+    </script>
+    
+    <!-- 他のサービスを読み込む -->
     <script src="./js/gemini-service.js"></script>
     <script src="./js/auth-service.js"></script>
     <script src="./js/chat-service.js"></script>

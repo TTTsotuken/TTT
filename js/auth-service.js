@@ -16,12 +16,12 @@ class AuthService {
       // 新規ルーム作成
       await firebaseService.set(roomPath, {
         password: password,
-        createdAt: window.firebaseService.getServerTimestamp(),
+        createdAt: Date.now(), // serverTimestamp()の代わりに直接タイムスタンプを使用
         users: {
           [userId]: {
             name: userName,
             language: userLanguage,
-            joinedAt: window.firebaseService.getServerTimestamp()
+            joinedAt: Date.now()
           }
         }
       });
@@ -57,7 +57,7 @@ class AuthService {
     await firebaseService.set(`${roomPath}/users/${userId}`, {
       name: userName,
       language: userLanguage,
-      joinedAt: window.firebaseService.getServerTimestamp()
+      joinedAt: Date.now()
     });
 
     this.currentUser = { userId, userName, userLanguage };
@@ -105,6 +105,4 @@ class AuthService {
   }
 }
 
-
 window.authService = new AuthService();
-

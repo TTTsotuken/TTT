@@ -299,7 +299,7 @@ class TranslationChatApp {
         <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
           <div class="text-center mb-6">
             <h1 class="text-3xl font-bold text-gray-800">🌍 翻訳チャット</h1>
-            <p class="text-sm text-purple-600 mt-2">✨ Gemini AI搭載</p>
+            <p class="text-sm text-blue-600 mt-2">🌐 MyMemory搭載</p>
           </div>
 
           <div class="flex mb-6 border-b border-gray-200">
@@ -378,7 +378,7 @@ class TranslationChatApp {
         <div class="bg-indigo-600 text-white p-4 shadow-lg">
           <div class="max-w-4xl mx-auto flex items-center justify-between">
             <div>
-              <h2 class="font-bold text-lg">ルーム: ${roomId} <span class="text-xs bg-purple-500 px-2 py-1 rounded ml-2">✨ Gemini</span></h2>
+              <h2 class="font-bold text-lg">ルーム: ${roomId} <span class="text-xs bg-blue-500 px-2 py-1 rounded ml-2"> MyMemory</span></h2>
               <p class="text-sm text-indigo-200">${userName} (${langName}) • ${roomUsers.length}人参加中</p>
             </div>
             <div class="flex gap-2">
@@ -389,7 +389,7 @@ class TranslationChatApp {
         </div>
 
         ${roomUsers.length < 2 ? '<div class="bg-yellow-50 border-b border-yellow-200 p-3 text-center text-yellow-800 text-sm">相手の参加を待っています... (1/2人)</div>' : ''}
-        ${isTranslating ? '<div class="bg-purple-50 border-b border-purple-200 p-3 text-center text-purple-700 text-sm">✨ Gemini AIで翻訳中...</div>' : ''}
+        ${isTranslating ? '<div class="bg-purple-50 border-b border-purple-200 p-3 text-center text-purple-700 text-sm"> MyMemoryで翻訳中...</div>' : ''}
         ${error ? `<div class="bg-red-50 border-b border-red-200 p-3 text-center text-red-700 text-sm">${error}</div>` : ''}
         ${success ? `<div class="bg-green-50 border-b border-green-200 p-3 text-center text-green-700 text-sm">${success}</div>` : ''}
 
@@ -440,7 +440,7 @@ class TranslationChatApp {
             </div>
             <div class="flex items-center justify-between mt-2 text-xs text-gray-500">
               <span>Enterキーで送信</span>
-              <span>✨ Gemini AI • 接続中</span>
+              <span> MyMemory • 接続中</span>
             </div>
           </div>
         </div>
@@ -553,3 +553,4 @@ if (window.firebaseServiceReady) {
     app.init();
   });
 }
+

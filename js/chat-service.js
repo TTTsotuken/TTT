@@ -7,34 +7,48 @@ class ChatService {
   // メッセージを送信
   async sendMessage(roomId, sender, senderLang, originalText, targetLang) {
     try {
-      console.log('メッセージ送信開始:', { roomId, sender, originalText, targetLang });
-      
       // 翻訳
-      const translatedText = await window.translationService.translate(originalText, targetLang);
-      console.log('翻訳完了:', translatedText);
+      const translatedText = await geminiService.translate(originalText, targetLang);
 
       // メッセージ保存
       const messageRef = firebaseService.push(`rooms/${roomId}/messages`);
       const messageId = messageRef.key;
 
-      const messageData = {
+      await firebaseService.set(`rooms/${roomId}/messages/${messageId}`, {
         id: messageId,
         sender: sender,
         senderLang: senderLang,
         originalText: originalText,
         translatedText: translatedText,
-        timestamp: Date.now() // serverTimestamp()の代わりに直接タイムスタンプを使用
-      };
-
-      console.log('メッセージデータ:', messageData);
-
-      await firebaseService.set(`rooms/${roomId}/messages/${messageId}`, messageData);
-      console.log('メッセージ保存完了');
+        timestamp: firebaseService.serverTimestamp()
+      });
 
       return { success: true, messageId, translatedText };
     } catch (error) {
-      console.error('メッセージ送信エラー詳細:', error);
-      console.error('エラースタック:', error.stack);
+      console.error('メッセージ送信エラー:', error);
+      throw error;
+    }
+  }
+
+  // メッセージを削除 // ★追加
+  async deleteMessage(roomId, messageId, userId) {
+    try {
+      const messagePath = `rooms/${roomId}/messages/${messageId}`;
+      const messageData = await firebaseService.get(messagePath);
+
+      if (!messageData) {
+        throw new Error('メッセージが見つかりません');
+      }
+
+      // 削除できるのはメッセージの送信者本人のみ
+      if (messageData.sender !== userId) {
+        throw new Error('このメッセージを削除する権限がありません');
+      }
+
+      await firebaseService.remove(messagePath);
+      return { success: true };
+    } catch (error) {
+      console.error('メッセージ削除エラー:', error);
       throw error;
     }
   }
@@ -67,7 +81,10 @@ class ChatService {
       (snapshot) => {
         const data = snapshot.val();
         if (data) {
-          const users = Object.values(data);
+          // lastActiveが存在しないユーザーに備えてソート順を調整
+          const users = Object.values(data).sort((a, b) => 
+            (b.lastActive || 0) - (a.lastActive || 0)
+          );
           callback(users);
         } else {
           callback([]);
@@ -104,5 +121,4 @@ class ChatService {
   }
 }
 
-window.chatService = new ChatService();
-
+const chatService = new ChatService();

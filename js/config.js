@@ -11,24 +11,22 @@ const CONFIG = {
     appId: "1:731320381667:web:9b256ebf09de1e935455d6"
   },
   
-
-  
   // 言語設定
   languages: [
-    { code: 'ja', name: '日本語', geminiCode: 'Japanese' },
-    { code: 'en', name: 'English', geminiCode: 'English' },
-    { code: 'zh-CN', name: '中文', geminiCode: 'Chinese' },
-    { code: 'ko', name: '한국어', geminiCode: 'Korean' },
-    { code: 'es', name: 'Español', geminiCode: 'Spanish' },
-    { code: 'fr', name: 'Français', geminiCode: 'French' },
-    { code: 'de', name: 'Deutsch', geminiCode: 'German' },
-    { code: 'it', name: 'Italiano', geminiCode: 'Italian' },
-    { code: 'pt', name: 'Português', geminiCode: 'Portuguese' },
-    { code: 'ru', name: 'Русский', geminiCode: 'Russian' },
-    { code: 'ar', name: 'العربية', geminiCode: 'Arabic' },
-    { code: 'hi', name: 'हिन्दी', geminiCode: 'Hindi' },
-    { code: 'th', name: 'ไทย', geminiCode: 'Thai' },
-    { code: 'vi', name: 'Tiếng Việt', geminiCode: 'Vietnamese' }
+    { code: 'ja', name: '日本語' },
+    { code: 'en', name: 'English' },
+    { code: 'zh-CN', name: '中文' },
+    { code: 'ko', name: '한국어' },
+    { code: 'es', name: 'Español' },
+    { code: 'fr', name: 'Français' },
+    { code: 'de', name: 'Deutsch' },
+    { code: 'it', name: 'Italiano' },
+    { code: 'pt', name: 'Português' },
+    { code: 'ru', name: 'Русский' },
+    { code: 'ar', name: 'العربية' },
+    { code: 'hi', name: 'हिन्दी' },
+    { code: 'th', name: 'ไทย' },
+    { code: 'vi', name: 'Tiếng Việt' }
   ],
   
   // アプリ設定
@@ -43,11 +41,6 @@ function validateConfig() {
   if (!CONFIG.firebase.apiKey || CONFIG.firebase.apiKey === 'YOUR_FIREBASE_API_KEY') {
     console.warn('⚠️ Firebase APIキーが設定されていません');
   }
-  if (!CONFIG.gemini.apiKey || CONFIG.gemini.apiKey === 'YOUR_GEMINI_API_KEY') {
-    console.warn('⚠️ Gemini APIキーが設定されていません');
-  }
 }
 
 validateConfig();
-
-

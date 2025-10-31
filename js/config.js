@@ -11,10 +11,7 @@ const CONFIG = {
     appId: "1:731320381667:web:9b256ebf09de1e935455d6"
   },
   
-  // Gemini AI設定
-  gemini: {
-    apiKey: "AIzaSyDx9jDxb8wFJVtWvL-jNQFjaihkKpmcORA"
-  },
+
   
   // 言語設定
   languages: [
@@ -52,4 +49,5 @@ function validateConfig() {
 }
 
 validateConfig();
+
 

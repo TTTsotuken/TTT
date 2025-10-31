@@ -7,25 +7,34 @@ class ChatService {
   // メッセージを送信
   async sendMessage(roomId, sender, senderLang, originalText, targetLang) {
     try {
+      console.log('メッセージ送信開始:', { roomId, sender, originalText, targetLang });
+      
       // 翻訳
       const translatedText = await geminiService.translate(originalText, targetLang);
+      console.log('翻訳完了:', translatedText);
 
       // メッセージ保存
       const messageRef = firebaseService.push(`rooms/${roomId}/messages`);
       const messageId = messageRef.key;
 
-      await firebaseService.set(`rooms/${roomId}/messages/${messageId}`, {
+      const messageData = {
         id: messageId,
         sender: sender,
         senderLang: senderLang,
         originalText: originalText,
         translatedText: translatedText,
-        timestamp: firebaseService.serverTimestamp()
-      });
+        timestamp: Date.now() // serverTimestamp()の代わりに直接タイムスタンプを使用
+      };
+
+      console.log('メッセージデータ:', messageData);
+
+      await firebaseService.set(`rooms/${roomId}/messages/${messageId}`, messageData);
+      console.log('メッセージ保存完了');
 
       return { success: true, messageId, translatedText };
     } catch (error) {
-      console.error('メッセージ送信エラー:', error);
+      console.error('メッセージ送信エラー詳細:', error);
+      console.error('エラースタック:', error.stack);
       throw error;
     }
   }
@@ -94,6 +103,5 @@ class ChatService {
     this.listeners = {};
   }
 }
-
 
 window.chatService = new ChatService();

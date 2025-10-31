@@ -10,8 +10,8 @@ class GeminiService {
     const prompt = `Translate the following text to ${targetLang.geminiCode}. Only provide the translation, no explanations or additional text:\n\n${text}`;
 
     try {
-      // v1betaで利用可能なgemini-1.5-flashモデルを使用
-      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${CONFIG.gemini.apiKey}`;
+      // v1エンドポイントとgemini-1.5-flashモデルを使用
+      const apiUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${CONFIG.gemini.apiKey}`;
       
       console.log('翻訳リクエスト送信:', { text, targetLang: targetLang.name });
       

@@ -29,7 +29,6 @@ class FirebaseService {
     this.app = null;
     this.database = null;
     this.initialized = false;
-    this._serverTimestamp = serverTimestamp;
   }
 
   async initialize() {
@@ -75,8 +74,9 @@ class FirebaseService {
     off(this.ref(path), callback);
   }
 
-  get serverTimestamp() {
-    return this._serverTimestamp();
+  // serverTimestampを関数として返す
+  getServerTimestamp() {
+    return serverTimestamp();
   }
 
   push(path) {

@@ -24,64 +24,65 @@
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
         import { getDatabase, ref, get, set, update, remove, onValue, off, serverTimestamp, push } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
-        class FirebaseService {
-          constructor() {
-            this.app = null;
-            this.database = null;
-            this.initialized = false;
-          }
+class FirebaseService {
+  constructor() {
+    this.app = null;
+    this.database = null;
+    this.initialized = false;
+    this._serverTimestamp = serverTimestamp;
+  }
 
-          async initialize() {
-            if (this.initialized) return;
-            
-            try {
-              this.app = initializeApp(CONFIG.firebase);
-              this.database = getDatabase(this.app);
-              this.initialized = true;
-              console.log('✅ Firebase初期化完了');
-            } catch (error) {
-              console.error('❌ Firebase初期化エラー:', error);
-              throw error;
-            }
-          }
+  async initialize() {
+    if (this.initialized) return;
+    
+    try {
+      this.app = initializeApp(CONFIG.firebase);
+      this.database = getDatabase(this.app);
+      this.initialized = true;
+      console.log('✅ Firebase初期化完了');
+    } catch (error) {
+      console.error('❌ Firebase初期化エラー:', error);
+      throw error;
+    }
+  }
 
-          ref(path) {
-            return ref(this.database, path);
-          }
+  ref(path) {
+    return ref(this.database, path);
+  }
 
-          async get(path) {
-            const snapshot = await get(this.ref(path));
-            return snapshot.val();
-          }
+  async get(path) {
+    const snapshot = await get(this.ref(path));
+    return snapshot.val();
+  }
 
-          async set(path, data) {
-            await set(this.ref(path), data);
-          }
+  async set(path, data) {
+    await set(this.ref(path), data);
+  }
 
-          async update(path, data) {
-            await update(this.ref(path), data);
-          }
+  async update(path, data) {
+    await update(this.ref(path), data);
+  }
 
-          async remove(path) {
-            await remove(this.ref(path));
-          }
+  async remove(path) {
+    await remove(this.ref(path));
+  }
 
-          onValue(path, callback) {
-            return onValue(this.ref(path), callback);
-          }
+  onValue(path, callback) {
+    return onValue(this.ref(path), callback);
+  }
 
-          off(path, callback) {
-            off(this.ref(path), callback);
-          }
+  off(path, callback) {
+    off(this.ref(path), callback);
+  }
 
-          get serverTimestamp() {
-            return serverTimestamp();
-          }
+  get serverTimestamp() {
+    return this._serverTimestamp();
+  }
 
-          push(path) {
-            return push(this.ref(path));
-          }
-        }
+  push(path) {
+    return push(this.ref(path));
+  }
+}
 
         window.firebaseService = new FirebaseService();
         console.log('✅ Firebase Serviceセット完了');

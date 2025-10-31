@@ -10,7 +10,7 @@ class ChatService {
       console.log('メッセージ送信開始:', { roomId, sender, originalText, targetLang });
       
       // 翻訳
-      const translatedText = await geminiService.translate(originalText, targetLang);
+      const translatedText = await window.translationService.translate(originalText, targetLang);
       console.log('翻訳完了:', translatedText);
 
       // メッセージ保存
@@ -105,3 +105,4 @@ class ChatService {
 }
 
 window.chatService = new ChatService();
+

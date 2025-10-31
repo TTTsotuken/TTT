@@ -95,4 +95,5 @@ class ChatService {
   }
 }
 
-const chatService = new ChatService();
+
+window.chatService = new ChatService();

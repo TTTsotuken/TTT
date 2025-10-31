@@ -48,4 +48,5 @@ class GeminiService {
   }
 }
 
-const geminiService = new GeminiService();
+
+window.geminiService = new GeminiService();

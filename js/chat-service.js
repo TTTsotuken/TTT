@@ -9,8 +9,8 @@ class ChatService {
     try {
       console.log('メッセージ送信開始:', { roomId, sender, originalText, targetLang });
       
-      // 翻訳
-      const translatedText = await window.translationService.translate(originalText, targetLang);
+      // 翻訳サービスを使用
+      const translatedText = await window.geminiService.translate(originalText, targetLang, senderLang);
       console.log('翻訳完了:', translatedText);
 
       // メッセージ保存
@@ -23,7 +23,7 @@ class ChatService {
         senderLang: senderLang,
         originalText: originalText,
         translatedText: translatedText,
-        timestamp: Date.now() // serverTimestamp()の代わりに直接タイムスタンプを使用
+        timestamp: Date.now()
       };
 
       console.log('メッセージデータ:', messageData);
@@ -105,4 +105,3 @@ class ChatService {
 }
 
 window.chatService = new ChatService();
-

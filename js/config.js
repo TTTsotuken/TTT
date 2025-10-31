@@ -15,7 +15,7 @@ const CONFIG = {
   gemini: {
     apiKey: "AIzaSyBhUNVM69EDCrire8drgrx2rq0lV4iVk_o",
     // gemini-proモデルを使用(gemini-service.jsで直接URLを構築)
-    apiUrl: "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent"
+    apiUrl: "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${CONFIG.gemini.apiKey}`;"
   },
   
   // 言語設定
@@ -54,3 +54,4 @@ function validateConfig() {
 }
 
 validateConfig();
+

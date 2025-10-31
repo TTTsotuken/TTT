@@ -1,20 +1,21 @@
 // 設定ファイル
 const CONFIG = {
-  // Firebase設定（Firebase Consoleから取得）
+  // Firebase設定(Firebase Consoleから取得)
   firebase: {
-  apiKey: "AIzaSyDLsRsitmY4uPX6a_-RTtq1X1EfQW4L7Uw",
-  authDomain: "translation-chat-561ae.firebaseapp.com",
-  databaseURL: "https://translation-chat-561ae-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "translation-chat-561ae",
-  storageBucket: "translation-chat-561ae.firebasestorage.app",
-  messagingSenderId: "731320381667",
-  appId: "1:731320381667:web:9b256ebf09de1e935455d6"
+    apiKey: "AIzaSyDLsRsitmY4uPX6a_-RTtq1X1EfQW4L7Uw",
+    authDomain: "translation-chat-561ae.firebaseapp.com",
+    databaseURL: "https://translation-chat-561ae-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "translation-chat-561ae",
+    storageBucket: "translation-chat-561ae.firebasestorage.app",
+    messagingSenderId: "731320381667",
+    appId: "1:731320381667:web:9b256ebf09de1e935455d6"
   },
   
   // Gemini AI設定
   gemini: {
     apiKey: "AIzaSyBhUNVM69EDCrire8drgrx2rq0lV4iVk_o",
-    apiUrl: "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent"
+    // gemini-proモデルを使用(gemini-service.jsで直接URLを構築)
+    apiUrl: "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent"
   },
   
   // 言語設定
@@ -51,6 +52,5 @@ function validateConfig() {
     console.warn('⚠️ Gemini APIキーが設定されていません');
   }
 }
-
 
 validateConfig();

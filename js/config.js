@@ -13,8 +13,8 @@ const CONFIG = {
   
   // Gemini AI設定
   gemini: {
-    apiKey: "AIzaSyBSnVC1nRpYx3L7uzUPOw7dgJlvCCqQ840",
-    apiUrl: "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+    apiKey: "AIzaSyBhUNVM69EDCrire8drgrx2rq0lV4iVk_o",
+    apiUrl: "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent"
   },
   
   // 言語設定
@@ -51,5 +51,6 @@ function validateConfig() {
     console.warn('⚠️ Gemini APIキーが設定されていません');
   }
 }
+
 
 validateConfig();

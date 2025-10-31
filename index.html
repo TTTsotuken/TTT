@@ -74,7 +74,6 @@ class FirebaseService {
     off(this.ref(path), callback);
   }
 
-  // serverTimestampを関数として返す
   getServerTimestamp() {
     return serverTimestamp();
   }
@@ -88,8 +87,10 @@ class FirebaseService {
         console.log('✅ Firebase Serviceセット完了');
     </script>
     
-    <!-- 他のサービスを読み込む -->
+    <!-- LibreTranslate翻訳サービスを読み込む -->
     <script src="./js/translation-service.js"></script>
+    
+    <!-- 他のサービスを読み込む -->
     <script src="./js/auth-service.js"></script>
     <script src="./js/chat-service.js"></script>
     
@@ -99,7 +100,7 @@ class FirebaseService {
         window.addEventListener('load', () => {
             console.log('Services check:', {
                 firebase: !!window.firebaseService,
-                gemini: !!window.geminiService,
+                translation: !!window.translationService,
                 auth: !!window.authService,
                 chat: !!window.chatService
             });

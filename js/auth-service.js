@@ -16,12 +16,13 @@ class AuthService {
       // 新規ルーム作成
       await firebaseService.set(roomPath, {
         password: password,
-        createdAt: Date.now(), // serverTimestamp()の代わりに直接タイムスタンプを使用
+        createdAt: firebaseService.serverTimestamp(),
         users: {
           [userId]: {
             name: userName,
             language: userLanguage,
-            joinedAt: Date.now()
+            joinedAt: firebaseService.serverTimestamp(),
+            lastActive: firebaseService.serverTimestamp() // ★追加: アクティビティタイムスタンプ
           }
         }
       });
@@ -44,12 +45,17 @@ class AuthService {
     if (existingUser) {
       this.currentUser = { userId: existingUser[0], userName, userLanguage };
       this.currentRoom = { roomId, password };
+      // ★追加: 再参加時にlastActiveを更新
+      await firebaseService.update(
+        `${roomPath}/users/${existingUser[0]}`, 
+        { lastActive: firebaseService.serverTimestamp() }
+      );
       return { success: true, action: 'rejoined', userId: existingUser[0] };
     }
 
     // 定員チェック
     const usersList = Object.values(users);
-    if (usersList.length >= CONFIG.app.maxUsersPerRoom) {
+    if (usersList.length >= CONFIG.app.maxUsersPerRoom) { // CONFIGに依存
       throw new Error('このルームは既に満員です');
     }
 
@@ -57,13 +63,28 @@ class AuthService {
     await firebaseService.set(`${roomPath}/users/${userId}`, {
       name: userName,
       language: userLanguage,
-      joinedAt: Date.now()
+      joinedAt: firebaseService.serverTimestamp(),
+      lastActive: firebaseService.serverTimestamp() // ★追加: アクティビティタイムスタンプ
     });
 
     this.currentUser = { userId, userName, userLanguage };
     this.currentRoom = { roomId, password };
 
     return { success: true, action: 'joined', userId };
+  }
+
+  // ユーザーアクティビティを更新 // ★追加
+  async updateActivity() {
+    if (!this.currentRoom || !this.currentUser) return;
+
+    try {
+      const path = `rooms/${this.currentRoom.roomId}/users/${this.currentUser.userId}`;
+      await firebaseService.update(path, {
+        lastActive: firebaseService.serverTimestamp()
+      });
+    } catch (error) {
+      console.error('アクティビティ更新エラー:', error);
+    }
   }
 
   // ルームから退出
@@ -98,11 +119,11 @@ class AuthService {
     return { success: true };
   }
 
-  // メッセージ削除
+  // メッセージ削除 (全件)
   async clearMessages(roomId) {
     await firebaseService.remove(`rooms/${roomId}/messages`);
     return { success: true };
   }
 }
 
-window.authService = new AuthService();
+const authService = new AuthService();

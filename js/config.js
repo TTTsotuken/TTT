@@ -13,9 +13,7 @@ const CONFIG = {
   
   // Gemini AI設定
   gemini: {
-    apiKey: "AIzaSyBhUNVM69EDCrire8drgrx2rq0lV4iVk_o",
-    
-    const apiUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${CONFIG.gemini.apiKey}`;
+    apiKey: "AIzaSyBhUNVM69EDCrire8drgrx2rq0lV4iVk_o"
   },
   
   // 言語設定
@@ -54,6 +52,3 @@ function validateConfig() {
 }
 
 validateConfig();
-
-
-

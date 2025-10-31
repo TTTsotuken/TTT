@@ -13,7 +13,7 @@ const CONFIG = {
   
   // Gemini AI設定
   gemini: {
-    apiKey: "AIzaSyBhUNVM69EDCrire8drgrx2rq0lV4iVk_o"
+    apiKey: "AIzaSyDx9jDxb8wFJVtWvL-jNQFjaihkKpmcORA"
   },
   
   // 言語設定
@@ -52,3 +52,4 @@ function validateConfig() {
 }
 
 validateConfig();
+

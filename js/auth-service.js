@@ -105,4 +105,5 @@ class AuthService {
   }
 }
 
-const authService = new AuthService();
+
+window.authService = new AuthService();

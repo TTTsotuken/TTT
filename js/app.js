@@ -1,4 +1,3 @@
-// メインアプリケーション
 class TranslationChatApp {
   constructor() {
     this.state = {
@@ -24,7 +23,7 @@ class TranslationChatApp {
 
   async init() {
     try {
-      await firebaseService.initialize();
+      await window.firebaseService.initialize();
       this.render();
       this.setupBeforeUnload();
     } catch (error) {
@@ -48,16 +47,14 @@ class TranslationChatApp {
     setTimeout(() => this.setState({ success: '' }), 3000);
   }
 
-  // タブを閉じる時の処理
   setupBeforeUnload() {
     window.addEventListener('beforeunload', () => {
-      if (authService.currentRoom && authService.currentUser) {
-        authService.leaveRoom();
+      if (window.authService.currentRoom && window.authService.currentUser) {
+        window.authService.leaveRoom();
       }
     });
   }
 
-  // 非アクティブタイマー設定
   setupInactivityTimer() {
     const resetTimer = () => {
       if (this.inactivityTimer) {
@@ -78,7 +75,6 @@ class TranslationChatApp {
     });
   }
 
-  // ログイン処理
   async handleLogin() {
     const { roomId, password, userName, userLanguage } = this.state;
 
@@ -88,7 +84,7 @@ class TranslationChatApp {
     }
 
     try {
-      const result = await authService.joinRoom(roomId, password, userName, userLanguage);
+      const result = await window.authService.joinRoom(roomId, password, userName, userLanguage);
       
       this.showSuccess(
         result.action === 'created' ? '新しいルームを作成しました！' :
@@ -98,7 +94,6 @@ class TranslationChatApp {
 
       this.setState({ screen: 'chat' });
       
-      // リアルタイム監視開始
       this.startWatching();
       this.setupInactivityTimer();
       
@@ -107,22 +102,18 @@ class TranslationChatApp {
     }
   }
 
-  // リアルタイム監視開始
   startWatching() {
-    const roomId = authService.currentRoom.roomId;
+    const roomId = window.authService.currentRoom.roomId;
 
-    // メッセージ監視
-    chatService.watchMessages(roomId, (messages) => {
+    window.chatService.watchMessages(roomId, (messages) => {
       this.setState({ messages });
     });
 
-    // ユーザー監視
-    chatService.watchUsers(roomId, (users) => {
+    window.chatService.watchUsers(roomId, (users) => {
       this.setState({ roomUsers: users });
     });
 
-    // ルーム削除監視
-    chatService.watchRoom(roomId, (exists) => {
+    window.chatService.watchRoom(roomId, (exists) => {
       if (!exists && this.state.screen === 'chat') {
         this.showError('ルームが削除されました。ログアウトします。');
         setTimeout(() => this.handleLogout(), 2000);
@@ -130,13 +121,12 @@ class TranslationChatApp {
     });
   }
 
-  // メッセージ送信
   async handleSendMessage() {
     const { message, roomUsers } = this.state;
     
     if (!message.trim()) return;
 
-    const otherUser = roomUsers.find(u => u.name !== authService.currentUser.userName);
+    const otherUser = roomUsers.find(u => u.name !== window.authService.currentUser.userName);
     if (!otherUser) {
       this.showError('相手がまだ参加していません');
       return;
@@ -145,10 +135,10 @@ class TranslationChatApp {
     try {
       this.setState({ isTranslating: true });
       
-      await chatService.sendMessage(
-        authService.currentRoom.roomId,
-        authService.currentUser.userName,
-        authService.currentUser.userLanguage,
+      await window.chatService.sendMessage(
+        window.authService.currentRoom.roomId,
+        window.authService.currentUser.userName,
+        window.authService.currentUser.userLanguage,
         message,
         otherUser.language
       );
@@ -160,7 +150,6 @@ class TranslationChatApp {
     }
   }
 
-  // 音声認識開始
   startRecording() {
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
       this.showError('お使いのブラウザは音声認識に対応していません');
@@ -202,10 +191,9 @@ class TranslationChatApp {
     }
   }
 
-  // ログアウト
   async handleLogout() {
-    chatService.unwatchAll();
-    await authService.leaveRoom();
+    window.chatService.unwatchAll();
+    await window.authService.leaveRoom();
     
     if (this.inactivityTimer) {
       clearTimeout(this.inactivityTimer);
@@ -221,7 +209,6 @@ class TranslationChatApp {
     });
   }
 
-  // ルーム削除
   async handleDeleteRoom() {
     const { roomId, password, confirmPassword } = this.state;
 
@@ -236,7 +223,7 @@ class TranslationChatApp {
     }
 
     try {
-      await authService.deleteRoom(roomId, password);
+      await window.authService.deleteRoom(roomId, password);
       this.showSuccess('ルームを削除しました');
       this.setState({ roomId: '', password: '', confirmPassword: '' });
     } catch (error) {
@@ -244,19 +231,17 @@ class TranslationChatApp {
     }
   }
 
-  // メッセージ削除
   async handleClearMessages() {
     if (!confirm('このルームの全メッセージを削除しますか？')) return;
 
     try {
-      await authService.clearMessages(authService.currentRoom.roomId);
+      await window.authService.clearMessages(window.authService.currentRoom.roomId);
       this.showSuccess('メッセージを削除しました');
     } catch (error) {
       this.showError('メッセージの削除に失敗しました');
     }
   }
 
-  // レンダリング
   render() {
     const app = document.getElementById('app');
     
@@ -347,9 +332,9 @@ class TranslationChatApp {
 
   renderChatScreen() {
     const { messages, roomUsers, message, isRecording, isTranslating, error, success } = this.state;
-    const roomId = authService.currentRoom?.roomId || '';
-    const userName = authService.currentUser?.userName || '';
-    const userLanguage = authService.currentUser?.userLanguage || 'ja';
+    const roomId = window.authService.currentRoom?.roomId || '';
+    const userName = window.authService.currentUser?.userName || '';
+    const userLanguage = window.authService.currentUser?.userLanguage || 'ja';
     const langName = CONFIG.languages.find(l => l.code === userLanguage)?.name || '';
 
     return `
@@ -425,3 +410,104 @@ class TranslationChatApp {
         </div>
       </div>
     `;
+  }
+
+  attachLoginEvents() {
+    document.getElementById('tab-login')?.addEventListener('click', () => {
+      this.setState({ loginTab: 'login', error: '', success: '' });
+    });
+    
+    document.getElementById('tab-delete')?.addEventListener('click', () => {
+      this.setState({ loginTab: 'delete', error: '', success: '', confirmPassword: '' });
+    });
+
+    document.getElementById('roomId')?.addEventListener('input', (e) => {
+      this.state.roomId = e.target.value;
+    });
+
+    document.getElementById('password')?.addEventListener('input', (e) => {
+      this.state.password = e.target.value;
+    });
+
+    document.getElementById('userName')?.addEventListener('input', (e) => {
+      this.state.userName = e.target.value;
+    });
+
+    document.getElementById('userLanguage')?.addEventListener('change', (e) => {
+      this.state.userLanguage = e.target.value;
+    });
+
+    document.getElementById('btn-login')?.addEventListener('click', () => this.handleLogin());
+
+    document.getElementById('deleteRoomId')?.addEventListener('input', (e) => {
+      this.state.roomId = e.target.value;
+    });
+
+    document.getElementById('deletePassword')?.addEventListener('input', (e) => {
+      this.state.password = e.target.value;
+    });
+
+    document.getElementById('confirmPassword')?.addEventListener('input', (e) => {
+      this.state.confirmPassword = e.target.value;
+    });
+
+    document.getElementById('btn-delete-room')?.addEventListener('click', () => this.handleDeleteRoom());
+  }
+
+  attachChatEvents() {
+    const messageInput = document.getElementById('message-input');
+    const btnSend = document.getElementById('btn-send');
+    const btnMic = document.getElementById('btn-mic');
+    const btnClear = document.getElementById('btn-clear');
+    const btnLogout = document.getElementById('btn-logout');
+
+    if (messageInput) {
+      messageInput.addEventListener('input', (e) => {
+        this.state.message = e.target.value;
+      });
+
+      messageInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          this.handleSendMessage();
+        }
+      });
+    }
+
+    if (btnSend) {
+      btnSend.addEventListener('click', () => this.handleSendMessage());
+    }
+
+    if (btnMic) {
+      btnMic.addEventListener('click', () => {
+        if (this.state.isRecording) {
+          this.stopRecording();
+        } else {
+          this.startRecording();
+        }
+      });
+    }
+
+    if (btnClear) {
+      btnClear.addEventListener('click', () => this.handleClearMessages());
+    }
+
+    if (btnLogout) {
+      btnLogout.addEventListener('click', () => this.handleLogout());
+    }
+  }
+
+  scrollToBottom() {
+    setTimeout(() => {
+      const container = document.getElementById('messages-container');
+      if (container) {
+        container.scrollTop = container.scrollHeight;
+      }
+    }, 100);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const app = new TranslationChatApp();
+  app.init();
+});

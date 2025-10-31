@@ -22,13 +22,49 @@ class TranslationChatApp {
   }
 
   async init() {
+    // Firebase Serviceが読み込まれるまで待つ
+    let attempts = 0;
+    while (!window.firebaseService && attempts < 50) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      attempts++;
+    }
+
+    if (!window.firebaseService) {
+      console.error('Firebase Serviceが読み込まれませんでした');
+      document.getElementById('app').innerHTML = `
+        <div class="min-h-screen bg-red-50 flex items-center justify-center p-4">
+          <div class="bg-white rounded-lg shadow-xl p-8 max-w-md">
+            <h2 class="text-2xl font-bold text-red-600 mb-4">❌ 読み込みエラー</h2>
+            <p class="text-gray-700 mb-4">Firebase Serviceの読み込みに失敗しました。</p>
+            <p class="text-sm text-gray-600">ページを再読み込みしてください。</p>
+            <button onclick="location.reload()" class="mt-4 w-full bg-indigo-600 text-white py-2 px-4 rounded-lg hover:bg-indigo-700">
+              再読み込み
+            </button>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
     try {
       await window.firebaseService.initialize();
       this.render();
       this.setupBeforeUnload();
     } catch (error) {
       console.error('初期化エラー:', error);
-      this.showError('アプリの初期化に失敗しました');
+      document.getElementById('app').innerHTML = `
+        <div class="min-h-screen bg-red-50 flex items-center justify-center p-4">
+          <div class="bg-white rounded-lg shadow-xl p-8 max-w-md">
+            <h2 class="text-2xl font-bold text-red-600 mb-4">❌ 初期化エラー</h2>
+            <p class="text-gray-700 mb-4">アプリの初期化に失敗しました。</p>
+            <p class="text-sm text-gray-600 mb-2">config.jsのFirebase設定を確認してください。</p>
+            <details class="text-xs text-gray-500 mt-4">
+              <summary class="cursor-pointer font-medium">エラー詳細</summary>
+              <pre class="mt-2 p-2 bg-gray-100 rounded overflow-auto">${error.message}</pre>
+            </details>
+          </div>
+        </div>
+      `;
     }
   }
 
@@ -507,7 +543,13 @@ class TranslationChatApp {
   }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+// アプリ起動 - Firebase Serviceの準備を待つ
+if (window.firebaseServiceReady) {
   const app = new TranslationChatApp();
   app.init();
-});
+} else {
+  window.addEventListener('firebaseServiceReady', () => {
+    const app = new TranslationChatApp();
+    app.init();
+  });
+}

@@ -98,7 +98,7 @@ class TranslationChatApp {
       }
       
       this.inactivityTimer = setTimeout(() => {
-        this.showError('15分間操作がなかったため、自動的にログアウトします。');
+        this.showError('10分間操作がなかったため、自動的にログアウトします。');
         setTimeout(() => this.handleLogout(), 2000);
       }, CONFIG.app.inactivityTimeout);
     };
@@ -553,4 +553,5 @@ if (window.firebaseServiceReady) {
     app.init();
   });
 }
+
 

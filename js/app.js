@@ -28,6 +28,22 @@ class TranslationChatApp {
       await new Promise(resolve => setTimeout(resolve, 100));
       attempts++;
     }
+        // 💡 【修正点１】招待リンクからの情報を読み取り（この処理はそのまま）
+    const urlParams = new URLSearchParams(window.location.search);
+    const inviteRoomId = urlParams.get('roomId');
+    const invitePassword = urlParams.get('password');
+
+    if (inviteRoomId && invitePassword) {
+      console.log('招待リンクを検出しました:', { inviteRoomId, invitePassword });
+      
+      // stateにルームIDとパスワードをセット (renderは呼ばない)
+      this.state.roomId = inviteRoomId;
+      this.state.password = invitePassword;
+      this.state.confirmPassword = invitePassword;
+      this.state.loginTab = 'login'; 
+      this.state.success = '招待リンクの情報を自動入力しました。名前を入力して参加してください。';
+      // 以前の this.render() は削除！
+    }
 
     if (!window.firebaseService) {
       console.error('Firebase Serviceが読み込まれませんでした');
@@ -267,6 +283,31 @@ class TranslationChatApp {
     }
   }
 
+  // 💡 【追加点１】招待リンクコピーのハンドラ
+  async handleCopyLink() {
+    // ルームIDとパスワードを取得
+    const roomId = window.authService.currentRoom?.roomId;
+    const password = window.authService.currentRoom?.password;
+    
+    if (!roomId || !password) {
+      this.showError('ルーム情報が見つかりません');
+      return;
+    }
+
+    // 現在のベースURLを取得し、クエリパラメータを追加
+    // index.htmlの有無にかかわらず、ルートURLを取得
+    const baseUrl = window.location.origin + window.location.pathname.replace('index.html', '').replace(/\/$/, '');
+    const inviteLink = `${baseUrl}/?roomId=${roomId}&password=${password}`; // ルートURLの後に /? をつける
+
+    // クリップボードにコピー
+    navigator.clipboard.writeText(inviteLink).then(() => {
+      this.showSuccess('招待リンクをクリップボードにコピーしました！');
+    }).catch(err => {
+      this.showError('コピーに失敗しました: ' + err.message);
+    });
+  }
+
+  
   async handleClearMessages() {
     if (!confirm('このルームの全メッセージを削除しますか？')) return;
 
@@ -381,7 +422,9 @@ class TranslationChatApp {
               <h2 class="font-bold text-lg">ルーム: ${roomId} <span class="text-xs bg-blue-500 px-2 py-1 rounded ml-2"> MyMemory</span></h2>
               <p class="text-sm text-indigo-200">${userName} (${langName}) • ${roomUsers.length}人参加中</p>
             </div>
+            
             <div class="flex gap-2">
+            　<button id="btn-copy-link" class="p-2 hover:bg-indigo-700 rounded-lg" title="招待リンクをコピー">🔗</button>
               <button id="btn-clear" class="p-2 hover:bg-indigo-700 rounded-lg" title="メッセージ削除">🗑️</button>
               <button id="btn-logout" class="p-2 hover:bg-indigo-700 rounded-lg" title="ログアウト">🚪</button>
             </div>
@@ -496,6 +539,7 @@ class TranslationChatApp {
     const btnMic = document.getElementById('btn-mic');
     const btnClear = document.getElementById('btn-clear');
     const btnLogout = document.getElementById('btn-logout');
+    const btnCopyLink = document.getElementById('btn-copy-link');
 
     if (messageInput) {
       messageInput.addEventListener('input', (e) => {
@@ -531,8 +575,13 @@ class TranslationChatApp {
     if (btnLogout) {
       btnLogout.addEventListener('click', () => this.handleLogout());
     }
-  }
 
+    // 💡 【修正点３】イベントリスナーの追加
+    if (btnCopyLink) {
+      btnCopyLink.addEventListener('click', () => this.handleCopyLink());
+    }
+  }
+  
   scrollToBottom() {
     setTimeout(() => {
       const container = document.getElementById('messages-container');
@@ -553,5 +602,3 @@ if (window.firebaseServiceReady) {
     app.init();
   });
 }
-
-

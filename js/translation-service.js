@@ -7,6 +7,7 @@ class TranslationService {
     this.languageMap = {
       'ja': 'ja-JP',
       'en': 'en-US',
+      'ne': 'ne-NP',
       'zh-CN': 'zh-CN',
       'ko': 'ko-KR',
       'es': 'es-ES',
@@ -18,8 +19,7 @@ class TranslationService {
       'ar': 'ar-SA',
       'hi': 'hi-IN',
       'th': 'th-TH',
-      'vi': 'vi-VN',
-      'ne': 'ne-NP'
+      'vi': 'vi-VN'
     };
   }
 

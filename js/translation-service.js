@@ -18,7 +18,8 @@ class TranslationService {
       'ar': 'ar-SA',
       'hi': 'hi-IN',
       'th': 'th-TH',
-      'vi': 'vi-VN'
+      'vi': 'vi-VN',
+      'ne': 'ne-NP'
     };
   }
 

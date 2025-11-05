@@ -66,21 +66,35 @@ class AuthService {
     return { success: true, action: 'joined', userId };
   }
 
-  // ルームから退出
-  async leaveRoom() {
-    if (!this.currentRoom || !this.currentUser) return;
+// ルームから退出
+async leaveRoom() {
+  if (!this.currentRoom || !this.currentUser) return;
 
-    try {
-      await firebaseService.remove(
-        `rooms/${this.currentRoom.roomId}/users/${this.currentUser.userId}`
-      );
-    } catch (error) {
-      console.error('退出エラー:', error);
+  try {
+    // 自分を削除
+    await window.firebaseService.remove(
+      `rooms/${this.currentRoom.roomId}/users/${this.currentUser.userId}`
+    );
+
+    // 残りのユーザー数を確認
+    const roomData = await window.firebaseService.get(`rooms/${this.currentRoom.roomId}`);
+    
+    if (roomData && roomData.users) {
+      const remainingUsers = Object.keys(roomData.users).length;
+      
+      // 誰もいなくなったらルーム全体を削除
+      if (remainingUsers === 0) {
+        await window.firebaseService.remove(`rooms/${this.currentRoom.roomId}`);
+        console.log('✅ 最後のユーザーが退出したため、ルームを削除しました');
+      }
     }
-
-    this.currentUser = null;
-    this.currentRoom = null;
+  } catch (error) {
+    console.error('退出エラー:', error);
   }
+
+  this.currentUser = null;
+  this.currentRoom = null;
+}
 
   // ルーム削除
   async deleteRoom(roomId, password) {
@@ -106,3 +120,4 @@ class AuthService {
 }
 
 window.authService = new AuthService();
+

@@ -32,7 +32,7 @@ const CONFIG = {
   
   // アプリ設定
   app: {
-    inactivityTimeout: 15 * 60 * 1000, // 15分
+    inactivityTimeout: 10 * 60 * 1000, // 15分
     maxUsersPerRoom: 2
   }
 };
@@ -45,4 +45,5 @@ function validateConfig() {
 }
 
 validateConfig();
+
 

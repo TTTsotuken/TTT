@@ -15,6 +15,7 @@ const CONFIG = {
   languages: [
     { code: 'ja', name: '日本語' },
     { code: 'en', name: 'English' },
+    { code: 'ne', name: 'नेपाली'},
     { code: 'zh-CN', name: '中文' },
     { code: 'ko', name: '한국어' },
     { code: 'es', name: 'Español' },
@@ -44,3 +45,4 @@ function validateConfig() {
 }
 
 validateConfig();
+

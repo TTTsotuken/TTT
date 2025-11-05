@@ -442,7 +442,7 @@ class TranslationChatApp {
               <div class="text-center text-gray-500 py-12">
                 <div class="text-6xl mb-4">💬</div>
                 <p class="text-lg font-medium">まだメッセージがありません</p>
-                <p class="text-sm mt-2">Gemini AIが自然な翻訳で会話をサポートします！</p>
+                <p class="text-sm mt-2">AIが自然な翻訳で会話をサポートします！</p>
               </div>
             ` : messages.map(msg => {
               const isOwn = msg.sender === userName;
@@ -602,3 +602,4 @@ if (window.firebaseServiceReady) {
     app.init();
   });
 }
+

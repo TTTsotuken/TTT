@@ -11,13 +11,12 @@ class AuthService {
     // 既に実行中なら何もしない
     if (this.cleanupInterval) return;
 
-    // 5分ごとに空ルームをチェック
+    // 1分ごとに空ルームをチェック（より頻繁に）
     this.cleanupInterval = setInterval(async () => {
       await this.cleanupEmptyRooms();
-    }, 5 * 60 * 1000); // 5分
+    }, 1 * 60 * 1000); // 1分
 
-    // 初回は即座に実行
-    this.cleanupEmptyRooms();
+    console.log('🔄 空ルーム自動クリーンアップを開始しました（1分間隔）');
   }
 
   // 🆕 空ルームを削除
@@ -29,22 +28,26 @@ class AuthService {
       if (!allRooms) return;
 
       let deletedCount = 0;
+      const now = Date.now();
       
       // 各ルームをチェック
       for (const [roomId, roomData] of Object.entries(allRooms)) {
-        // ユーザーがいないルームを削除
-        if (!roomData.users || Object.keys(roomData.users).length === 0) {
+        // ユーザーがいないルーム、または古いルーム（24時間以上前）を削除
+        const hasNoUsers = !roomData.users || Object.keys(roomData.users).length === 0;
+        const isOldRoom = roomData.createdAt && (now - roomData.createdAt > 24 * 60 * 60 * 1000);
+        
+        if (hasNoUsers || isOldRoom) {
           await window.firebaseService.remove(`rooms/${roomId}`);
           deletedCount++;
-          console.log(`🗑️ 空ルーム削除: ${roomId}`);
+          console.log(`🗑️ ${hasNoUsers ? '空' : '古い'}ルーム削除: ${roomId}`);
         }
       }
 
       if (deletedCount > 0) {
-        console.log(`✅ ${deletedCount}個の空ルームを削除しました`);
+        console.log(`✅ ${deletedCount}個のルームを自動削除しました`);
       }
     } catch (error) {
-      console.error('クリーンアップエラー:', error);
+      console.error('❌ クリーンアップエラー:', error);
     }
   }
 
@@ -132,25 +135,36 @@ class AuthService {
     if (!this.currentRoom || !this.currentUser) return;
 
     try {
-      // 自分を削除
-      await window.firebaseService.remove(
-        `rooms/${this.currentRoom.roomId}/users/${this.currentUser.userId}`
-      );
-
-      // 残りのユーザー数を確認
-      const roomData = await window.firebaseService.get(`rooms/${this.currentRoom.roomId}`);
+      const roomId = this.currentRoom.roomId;
+      const userId = this.currentUser.userId;
       
+      console.log(`👋 ユーザー退出: ${userId} from ${roomId}`);
+      
+      // 自分を削除
+      await window.firebaseService.remove(`rooms/${roomId}/users/${userId}`);
+
+      // 少し待ってから残りのユーザー数を確認
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      const roomData = await window.firebaseService.get(`rooms/${roomId}`);
+      
+      // ルームが存在し、ユーザーデータがある場合
       if (roomData && roomData.users) {
         const remainingUsers = Object.keys(roomData.users).length;
+        console.log(`👥 残りユーザー数: ${remainingUsers}`);
         
-        // 誰もいなくなったらルーム全体を削除
+        // 誰もいなくなったらルーム全体を削除（メッセージも含む）
         if (remainingUsers === 0) {
-          await window.firebaseService.remove(`rooms/${this.currentRoom.roomId}`);
-          console.log('✅ 最後のユーザーが退出したため、ルームを削除しました');
+          await window.firebaseService.remove(`rooms/${roomId}`);
+          console.log('✅ 最後のユーザーが退出したため、ルームとメッセージを全て削除しました');
         }
+      } else if (roomData && !roomData.users) {
+        // ユーザーデータがない場合もルームを削除
+        await window.firebaseService.remove(`rooms/${roomId}`);
+        console.log('✅ ユーザーがいないため、ルームを削除しました');
       }
     } catch (error) {
-      console.error('退出エラー:', error);
+      console.error('❌ 退出エラー:', error);
     }
 
     // クリーンアップ停止

@@ -28,7 +28,8 @@ class TranslationChatApp {
       await new Promise(resolve => setTimeout(resolve, 100));
       attempts++;
     }
-        // 💡 【修正点１】招待リンクからの情報を読み取り（この処理はそのまま）
+    
+    // 💡 招待リンクからの情報を読み取り
     const urlParams = new URLSearchParams(window.location.search);
     const inviteRoomId = urlParams.get('roomId');
     const invitePassword = urlParams.get('password');
@@ -36,13 +37,12 @@ class TranslationChatApp {
     if (inviteRoomId && invitePassword) {
       console.log('招待リンクを検出しました:', { inviteRoomId, invitePassword });
       
-      // stateにルームIDとパスワードをセット (renderは呼ばない)
+      // stateにルームIDとパスワードをセット
       this.state.roomId = inviteRoomId;
       this.state.password = invitePassword;
       this.state.confirmPassword = invitePassword;
       this.state.loginTab = 'login'; 
       this.state.success = '招待リンクの情報を自動入力しました。名前を入力して参加してください。';
-      // 以前の this.render() は削除！
     }
 
     if (!window.firebaseService) {
@@ -113,9 +113,15 @@ class TranslationChatApp {
         clearTimeout(this.inactivityTimer);
       }
       
-      this.inactivityTimer = setTimeout(() => {
+      this.inactivityTimer = setTimeout(async () => {
+        console.log('⏰ 10分間操作がなかったため、自動ログアウトします');
         this.showError('10分間操作がなかったため、自動的にログアウトします。');
-        setTimeout(() => this.handleLogout(), 2000);
+        
+        // 2秒待ってからログアウト（ユーザーにメッセージを見せる）
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        // ログアウト処理（ルームとメッセージを削除）
+        await this.handleAutoLogout();
       }, CONFIG.app.inactivityTimeout);
     };
 
@@ -125,6 +131,36 @@ class TranslationChatApp {
     events.forEach(event => {
       window.addEventListener(event, resetTimer);
     });
+  }
+
+  // 🆕 自動ログアウト処理（ルームとメッセージも削除）
+  async handleAutoLogout() {
+    console.log('🚪 自動ログアウト開始');
+    
+    // チャット監視を停止
+    window.chatService.unwatchAll();
+    
+    // ルームから退出（leaveRoomが自動的にルームとメッセージを削除）
+    await window.authService.leaveRoom();
+    
+    // タイマーをクリア
+    if (this.inactivityTimer) {
+      clearTimeout(this.inactivityTimer);
+      this.inactivityTimer = null;
+    }
+
+    // ログイン画面に戻る
+    this.setState({
+      screen: 'login',
+      roomId: '',
+      password: '',
+      messages: [],
+      roomUsers: [],
+      error: '',
+      success: '自動ログアウトしました。ルームとメッセージは削除されました。'
+    });
+    
+    console.log('✅ 自動ログアウト完了');
   }
 
   async handleLogin() {
@@ -244,13 +280,21 @@ class TranslationChatApp {
   }
 
   async handleLogout() {
+    console.log('🚪 手動ログアウト開始');
+    
+    // チャット監視を停止
     window.chatService.unwatchAll();
+    
+    // ルームから退出（leaveRoomが自動的にルームとメッセージを削除）
     await window.authService.leaveRoom();
     
+    // タイマーをクリア
     if (this.inactivityTimer) {
       clearTimeout(this.inactivityTimer);
+      this.inactivityTimer = null;
     }
 
+    // ログイン画面に戻る
     this.setState({
       screen: 'login',
       roomId: '',
@@ -259,6 +303,8 @@ class TranslationChatApp {
       roomUsers: [],
       error: ''
     });
+    
+    console.log('✅ 手動ログアウト完了');
   }
 
   async handleDeleteRoom() {
@@ -283,9 +329,8 @@ class TranslationChatApp {
     }
   }
 
-  // 💡 【追加点１】招待リンクコピーのハンドラ
+  // 💡 招待リンクコピーのハンドラ
   async handleCopyLink() {
-    // ルームIDとパスワードを取得
     const roomId = window.authService.currentRoom?.roomId;
     const password = window.authService.currentRoom?.password;
     
@@ -294,12 +339,9 @@ class TranslationChatApp {
       return;
     }
 
-    // 現在のベースURLを取得し、クエリパラメータを追加
-    // index.htmlの有無にかかわらず、ルートURLを取得
     const baseUrl = window.location.origin + window.location.pathname.replace('index.html', '').replace(/\/$/, '');
-    const inviteLink = `${baseUrl}/?roomId=${roomId}&password=${password}`; // ルートURLの後に /? をつける
+    const inviteLink = `${baseUrl}/?roomId=${roomId}&password=${password}`;
 
-    // クリップボードにコピー
     navigator.clipboard.writeText(inviteLink).then(() => {
       this.showSuccess('招待リンクをクリップボードにコピーしました！');
     }).catch(err => {
@@ -307,7 +349,6 @@ class TranslationChatApp {
     });
   }
 
-  
   async handleClearMessages() {
     if (!confirm('このルームの全メッセージを削除しますか？')) return;
 
@@ -339,8 +380,8 @@ class TranslationChatApp {
       <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
           <div class="text-center mb-6">
-            <h1 class="text-3xl font-bold text-gray-800">🌍 翻訳チャット</h1>
-            <p class="text-sm text-blue-600 mt-2">🌐 MyMemory搭載</p>
+            <h1 class="text-3xl font-bold text-gray-800">🌐 翻訳チャット</h1>
+            <p class="text-sm text-blue-600 mt-2">🌍 MyMemory搭載</p>
           </div>
 
           <div class="flex mb-6 border-b border-gray-200">
@@ -394,7 +435,7 @@ class TranslationChatApp {
                 <input type="password" id="deletePassword" value="${password}" class="w-full px-4 py-2 border border-gray-300 rounded-lg" placeholder="••••••">
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">パスワード（確認）</label>
+                <label class="block text-sm font-medium text-gray-700 mb-2">パスワード(確認)</label>
                 <input type="password" id="confirmPassword" value="${confirmPassword}" class="w-full px-4 py-2 border border-gray-300 rounded-lg" placeholder="••••••">
               </div>
               <button id="btn-delete-room" class="w-full bg-red-600 text-white py-3 rounded-lg font-medium hover:bg-red-700">
@@ -419,12 +460,12 @@ class TranslationChatApp {
         <div class="bg-indigo-600 text-white p-4 shadow-lg">
           <div class="max-w-4xl mx-auto flex items-center justify-between">
             <div>
-              <h2 class="font-bold text-lg">ルーム: ${roomId} <span class="text-xs bg-blue-500 px-2 py-1 rounded ml-2"> MyMemory</span></h2>
+              <h2 class="font-bold text-lg">ルーム: ${roomId} <span class="text-xs bg-blue-500 px-2 py-1 rounded ml-2">🌍 MyMemory</span></h2>
               <p class="text-sm text-indigo-200">${userName} (${langName}) • ${roomUsers.length}人参加中</p>
             </div>
             
             <div class="flex gap-2">
-            　<button id="btn-copy-link" class="p-2 hover:bg-indigo-700 rounded-lg" title="招待リンクをコピー">🔗</button>
+              <button id="btn-copy-link" class="p-2 hover:bg-indigo-700 rounded-lg" title="招待リンクをコピー">🔗</button>
               <button id="btn-clear" class="p-2 hover:bg-indigo-700 rounded-lg" title="メッセージ削除">🗑️</button>
               <button id="btn-logout" class="p-2 hover:bg-indigo-700 rounded-lg" title="ログアウト">🚪</button>
             </div>
@@ -432,7 +473,7 @@ class TranslationChatApp {
         </div>
 
         ${roomUsers.length < 2 ? '<div class="bg-yellow-50 border-b border-yellow-200 p-3 text-center text-yellow-800 text-sm">相手の参加を待っています... (1/2人)</div>' : ''}
-        ${isTranslating ? '<div class="bg-purple-50 border-b border-purple-200 p-3 text-center text-purple-700 text-sm"> MyMemoryで翻訳中...</div>' : ''}
+        ${isTranslating ? '<div class="bg-purple-50 border-b border-purple-200 p-3 text-center text-purple-700 text-sm">🌍 MyMemoryで翻訳中...</div>' : ''}
         ${error ? `<div class="bg-red-50 border-b border-red-200 p-3 text-center text-red-700 text-sm">${error}</div>` : ''}
         ${success ? `<div class="bg-green-50 border-b border-green-200 p-3 text-center text-green-700 text-sm">${success}</div>` : ''}
 
@@ -473,7 +514,7 @@ class TranslationChatApp {
               <button id="btn-mic" class="p-3 rounded-lg ${isRecording ? 'bg-red-600 text-white' : 'bg-gray-200 text-gray-700'} ${roomUsers.length < 2 ? 'opacity-50 cursor-not-allowed' : ''}" ${roomUsers.length < 2 ? 'disabled' : ''}>
                 ${isRecording ? '🎙️' : '🎤'}
               </button>
-              <input type="text" id="message-input"  placeholder="${isTranslating ? '翻訳中...' : roomUsers.length < 2 ? '相手の参加を待っています...' : 'メッセージを入力...'}" 
+              <input type="text" id="message-input" value="${message}" placeholder="${isTranslating ? '翻訳中...' : roomUsers.length < 2 ? '相手の参加を待っています...' : 'メッセージを入力...'}" 
                 class="flex-1 px-4 py-2 border border-gray-300 rounded-lg ${roomUsers.length < 2 || isTranslating ? 'bg-gray-100' : ''}" 
                 ${roomUsers.length < 2 || isTranslating ? 'disabled' : ''}>
               <button id="btn-send" class="bg-indigo-600 text-white p-3 rounded-lg hover:bg-indigo-700 ${!message.trim() || roomUsers.length < 2 || isTranslating ? 'opacity-50 cursor-not-allowed' : ''}" 
@@ -483,7 +524,7 @@ class TranslationChatApp {
             </div>
             <div class="flex items-center justify-between mt-2 text-xs text-gray-500">
               <span>Enterキーで送信</span>
-              <span> MyMemory • 接続中</span>
+              <span>🌍 MyMemory • 接続中</span>
             </div>
           </div>
         </div>
@@ -542,9 +583,6 @@ class TranslationChatApp {
     const btnCopyLink = document.getElementById('btn-copy-link');
 
     if (messageInput) {
-      
-      messageInput.value = this.state.message;
-      
       messageInput.addEventListener('input', (e) => {
         this.state.message = e.target.value;
       });
@@ -579,7 +617,6 @@ class TranslationChatApp {
       btnLogout.addEventListener('click', () => this.handleLogout());
     }
 
-    // 💡 【修正点３】イベントリスナーの追加
     if (btnCopyLink) {
       btnCopyLink.addEventListener('click', () => this.handleCopyLink());
     }
@@ -605,6 +642,3 @@ if (window.firebaseServiceReady) {
     app.init();
   });
 }
-
-
-

@@ -473,7 +473,7 @@ class TranslationChatApp {
               <button id="btn-mic" class="p-3 rounded-lg ${isRecording ? 'bg-red-600 text-white' : 'bg-gray-200 text-gray-700'} ${roomUsers.length < 2 ? 'opacity-50 cursor-not-allowed' : ''}" ${roomUsers.length < 2 ? 'disabled' : ''}>
                 ${isRecording ? '🎙️' : '🎤'}
               </button>
-              <input type="text" id="message-input" value="${message}" placeholder="${isTranslating ? '翻訳中...' : roomUsers.length < 2 ? '相手の参加を待っています...' : 'メッセージを入力...'}" 
+              <input type="text" id="message-input"  placeholder="${isTranslating ? '翻訳中...' : roomUsers.length < 2 ? '相手の参加を待っています...' : 'メッセージを入力...'}" 
                 class="flex-1 px-4 py-2 border border-gray-300 rounded-lg ${roomUsers.length < 2 || isTranslating ? 'bg-gray-100' : ''}" 
                 ${roomUsers.length < 2 || isTranslating ? 'disabled' : ''}>
               <button id="btn-send" class="bg-indigo-600 text-white p-3 rounded-lg hover:bg-indigo-700 ${!message.trim() || roomUsers.length < 2 || isTranslating ? 'opacity-50 cursor-not-allowed' : ''}" 
@@ -542,6 +542,7 @@ class TranslationChatApp {
     const btnCopyLink = document.getElementById('btn-copy-link');
 
     if (messageInput) {
+      messageInput.value = this.state.message;
       messageInput.addEventListener('input', (e) => {
         this.state.message = e.target.value;
       });
@@ -602,4 +603,5 @@ if (window.firebaseServiceReady) {
     app.init();
   });
 }
+
 

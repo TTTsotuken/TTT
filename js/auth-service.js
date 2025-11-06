@@ -14,7 +14,7 @@ class AuthService {
     // 1分ごとに空ルームをチェック（より頻繁に）
     this.cleanupInterval = setInterval(async () => {
       await this.cleanupEmptyRooms();
-    }, 1 * 60 * 1000); // 1分
+    }, 5 * 60 * 1000); // 5分
 
     console.log('🔄 空ルーム自動クリーンアップを開始しました（1分間隔）');
   }
@@ -198,3 +198,4 @@ class AuthService {
 }
 
 window.authService = new AuthService();
+

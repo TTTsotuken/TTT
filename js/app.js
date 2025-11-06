@@ -542,7 +542,9 @@ class TranslationChatApp {
     const btnCopyLink = document.getElementById('btn-copy-link');
 
     if (messageInput) {
+      
       messageInput.value = this.state.message;
+      
       messageInput.addEventListener('input', (e) => {
         this.state.message = e.target.value;
       });
@@ -603,5 +605,6 @@ if (window.firebaseServiceReady) {
     app.init();
   });
 }
+
 
 

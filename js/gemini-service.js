@@ -56,7 +56,7 @@ class GeminiService {
                 ]
               }
             ],
-            config: {
+            generationConfig: {
                // 翻訳用途のためtemperatureを低めに設定
                temperature: 0.1 
             }

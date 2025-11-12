@@ -604,7 +604,7 @@ class TranslationChatApp {
                 ${roomUsers.length < 2 || isTranslating ? 'disabled' : ''}>
               <button id="btn-send" class="bg-indigo-600 text-white p-3 rounded-lg hover:bg-indigo-700 ${!message.trim() || roomUsers.length < 2 || isTranslating ? 'opacity-50 cursor-not-allowed' : ''}" 
                 ${!message.trim() || roomUsers.length < 2 || isTranslating ? 'disabled' : ''}>
-                ➤
+                
               </button>
             </div>
             <div class="flex items-center justify-between mt-2 text-xs text-gray-500">
@@ -762,3 +762,4 @@ if (window.firebaseServiceReady) {
     app.init();
   });
 }
+

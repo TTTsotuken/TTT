@@ -603,7 +603,9 @@ class TranslationChatApp {
                 class="flex-1 px-4 py-2 border border-gray-300 rounded-lg ${roomUsers.length < 2 || isTranslating ? 'bg-gray-100' : ''}" 
                 ${roomUsers.length < 2 || isTranslating ? 'disabled' : ''}>
               <button id="btn-send" class="bg-indigo-600 text-white p-3 rounded-lg hover:bg-indigo-700 ${!message.trim() || roomUsers.length < 2 || isTranslating ? 'opacity-50 cursor-not-allowed' : ''}" 
-                ${!message.trim() || roomUsers.length < 2 || isTranslating ? 'disabled' : ''}>
+                <button id="btn-send" class="bg-indigo-600 text-white p-3 rounded-lg hover:bg-indigo-700 ${!message.trim() || roomUsers.length < 2 || isTranslating ? 'opacity-50 cursor-not-allowed' : ''}" ${!message.trim() || roomUsers.length < 2 || isTranslating ? 'disabled' : ''}>
+                ➤
+              </button>
                 
               </button>
             </div>
@@ -762,4 +764,5 @@ if (window.firebaseServiceReady) {
     app.init();
   });
 }
+
 

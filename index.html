@@ -23,68 +23,142 @@
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
         import { getDatabase, ref, get, set, update, remove, onValue, off, serverTimestamp, push } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+        // 🔥 Firebase Authentication を追加
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 
-class FirebaseService {
-  constructor() {
-    this.app = null;
-    this.database = null;
-    this.initialized = false;
-  }
+        // Firebase初期化
+        const app = initializeApp(CONFIG.firebase);
+        const database = getDatabase(app);
+        const auth = getAuth(app); // 🔥 認証初期化
 
-  async initialize() {
-    if (this.initialized) return;
-    
-    try {
-      this.app = initializeApp(CONFIG.firebase);
-      this.database = getDatabase(this.app);
-      this.initialized = true;
-      console.log('✅ Firebase初期化完了');
-    } catch (error) {
-      console.error('❌ Firebase初期化エラー:', error);
-      throw error;
-    }
-  }
+        class FirebaseService {
+            constructor() {
+                this.app = app;
+                this.database = database;
+                this.initialized = true;
+            }
 
-  ref(path) {
-    return ref(this.database, path);
-  }
+            ref(path) {
+                return ref(this.database, path);
+            }
 
-  async get(path) {
-    const snapshot = await get(this.ref(path));
-    return snapshot.val();
-  }
+            async get(path) {
+                const snapshot = await get(this.ref(path));
+                return snapshot.val();
+            }
 
-  async set(path, data) {
-    await set(this.ref(path), data);
-  }
+            async set(path, data) {
+                await set(this.ref(path), data);
+            }
 
-  async update(path, data) {
-    await update(this.ref(path), data);
-  }
+            async update(path, data) {
+                await update(this.ref(path), data);
+            }
 
-  async remove(path) {
-    await remove(this.ref(path));
-  }
+            async remove(path) {
+                await remove(this.ref(path));
+            }
 
-  onValue(path, callback) {
-    return onValue(this.ref(path), callback);
-  }
+            onValue(path, callback) {
+                return onValue(this.ref(path), callback);
+            }
 
-  off(path, callback) {
-    off(this.ref(path), callback);
-  }
+            off(path, callback) {
+                off(this.ref(path), callback);
+            }
 
-  getServerTimestamp() {
-    return serverTimestamp();
-  }
+            getServerTimestamp() {
+                return serverTimestamp();
+            }
 
-  push(path) {
-    return push(this.ref(path));
-  }
-}
+            push(path) {
+                return push(this.ref(path));
+            }
+        }
 
         window.firebaseService = new FirebaseService();
-        console.log('✅ Firebase Serviceセット完了');
+        console.log('✅ Firebase Service セット完了');
+
+        // 🔥 Firebase Authentication Service
+        class AdminAuthService {
+            constructor() {
+                this.auth = auth;
+                this.currentUser = null;
+                
+                // 認証状態の監視
+                onAuthStateChanged(this.auth, (user) => {
+                    this.currentUser = user;
+                    console.log('認証状態:', user ? '✅ ログイン中' : '❌ 未ログイン');
+                });
+            }
+
+            // メール/パスワードでログイン
+            async login(email, password) {
+                try {
+                    const userCredential = await signInWithEmailAndPassword(this.auth, email, password);
+                    console.log('✅ Firebase認証成功');
+                    return { success: true, user: userCredential.user };
+                } catch (error) {
+                    console.error('❌ Firebase認証失敗:', error.code);
+                    
+                    let errorMessage = 'ログインに失敗しました';
+                    if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
+                        errorMessage = 'メールアドレスまたはパスワードが正しくありません';
+                    } else if (error.code === 'auth/too-many-requests') {
+                        errorMessage = '試行回数が多すぎます。しばらく待ってから再試行してください';
+                    } else if (error.code === 'auth/invalid-email') {
+                        errorMessage = 'メールアドレスの形式が正しくありません';
+                    }
+                    
+                    return { success: false, error: errorMessage };
+                }
+            }
+
+            // ログアウト
+            async logout() {
+                try {
+                    await signOut(this.auth);
+                    console.log('✅ ログアウト成功');
+                    return { success: true };
+                } catch (error) {
+                    console.error('❌ ログアウト失敗:', error);
+                    return { success: false };
+                }
+            }
+
+            // ログイン状態確認
+            isLoggedIn() {
+                return this.currentUser !== null;
+            }
+
+            // 招待トークン生成
+            generateInviteToken(roomId, password) {
+                const data = `${roomId}:${password}:${Date.now()}`;
+                return btoa(data);
+            }
+
+            // 招待トークン検証
+            validateInviteToken(token) {
+                try {
+                    const decoded = atob(token);
+                    const parts = decoded.split(':');
+                    if (parts.length === 3) {
+                        return {
+                            valid: true,
+                            roomId: parts[0],
+                            password: parts[1],
+                            timestamp: parseInt(parts[2])
+                        };
+                    }
+                } catch (e) {
+                    console.error('トークン検証エラー:', e);
+                }
+                return { valid: false };
+            }
+        }
+
+        window.adminAuthService = new AdminAuthService();
+        console.log('✅ Admin Auth Service 初期化完了');
     </script>
     
     <!-- LibreTranslate翻訳サービスを読み込む -->
@@ -102,7 +176,8 @@ class FirebaseService {
                 firebase: !!window.firebaseService,
                 translation: !!window.translationService,
                 auth: !!window.authService,
-                chat: !!window.chatService
+                chat: !!window.chatService,
+                adminAuth: !!window.adminAuthService // 🔥 追加
             });
             
             // Firebase Service準備完了を通知

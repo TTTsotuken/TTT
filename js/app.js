@@ -32,12 +32,18 @@ class TranslationChatApp {
     }
 
     try {
-      // Firebase Serviceの初期化確認（既に初期化済みの場合はスキップ）
-      if (window.firebaseService && typeof window.firebaseService.db !== 'undefined') {
-        console.log('✅ Firebase Service already initialized');
-      } else {
-        throw new Error('Firebase Service not properly initialized');
+      // Firebase Serviceの初期化確認
+      console.log('🔍 Firebase Service check:', {
+        exists: !!window.firebaseService,
+        hasDb: window.firebaseService?.db !== undefined,
+        hasAuth: window.firebaseService?.auth !== undefined
+      });
+      
+      if (!window.firebaseService) {
+        throw new Error('Firebase Service not found');
       }
+      
+      console.log('✅ Firebase Service ready');
 
       const urlParams = new URLSearchParams(window.location.search);
       const inviteToken = urlParams.get('invite');

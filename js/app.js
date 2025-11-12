@@ -607,11 +607,8 @@ class TranslationChatApp {
               <input type="text" id="message-input" value="${message}" placeholder="${isTranslating ? '翻訳中...' : roomUsers.length < 2 ? '相手の参加を待っています...' : 'メッセージを入力...'}" 
                 class="flex-1 px-4 py-2 border border-gray-300 rounded-lg ${roomUsers.length < 2 || isTranslating ? 'bg-gray-100' : ''}" 
                 ${roomUsers.length < 2 || isTranslating ? 'disabled' : ''}>
-              <button id="btn-send" class="bg-indigo-600 text-white p-3 rounded-lg hover:bg-indigo-700 ${!message.trim() || roomUsers.length < 2 || isTranslating ? 'opacity-50 cursor-not-allowed' : ''}" 
-                <button id="btn-send" class="bg-indigo-600 text-white p-3 rounded-lg hover:bg-indigo-700 ${!message.trim() || roomUsers.length < 2 || isTranslating ? 'opacity-50 cursor-not-allowed' : ''}" ${!message.trim() || roomUsers.length < 2 || isTranslating ? 'disabled' : ''}>
+              <button id="btn-send" class="bg-indigo-600 text-white p-3 rounded-lg hover:bg-indigo-700 ${!message.trim() || roomUsers.length < 2 || isTranslating ? 'opacity-50 cursor-not-allowed' : ''}" ${!message.trim() || roomUsers.length < 2 || isTranslating ? 'disabled' : ''}>
                 ➤
-              </button>
-                
               </button>
             </div>
             <div class="flex items-center justify-between mt-2 text-xs text-gray-500">
@@ -769,5 +766,3 @@ if (window.firebaseServiceReady) {
     app.init();
   });
 }
-
-

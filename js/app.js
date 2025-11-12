@@ -172,6 +172,7 @@ class TranslationChatApp {
   }
 
   async handleAdminLogout() {
+    // Firebase認証からログアウト
     await window.adminAuthService.logout();
     
     // チャットからもログアウト
@@ -184,28 +185,34 @@ class TranslationChatApp {
       clearTimeout(this.inactivityTimer);
     }
 
+    // 状態を完全リセット
     this.state = {
-      ...this.state,
       screen: 'admin-login',
+      isInviteMode: false,
       adminEmail: '',
       adminPassword: '',
+      loginTab: 'login',
       roomId: '',
       password: '',
       confirmPassword: '',
       userName: '',
+      userLanguage: 'ja',
+      message: '',
       messages: [],
       roomUsers: [],
+      isRecording: false,
+      isTranslating: false,
       error: '',
       success: 'ログアウトしました'
     };
     
+    // 画面を再描画
     this.render();
     
-    // 成功メッセージを消す
+    // 成功メッセージを3秒後に消す
     setTimeout(() => {
-      if (this.state.success === 'ログアウトしました') {
-        this.setState({ success: '' });
-      }
+      this.state.success = '';
+      this.render();
     }, 3000);
   }
 

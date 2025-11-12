@@ -462,7 +462,7 @@ class TranslationChatApp {
           ${!isInviteMode ? `
             <div class="flex mb-6 border-b border-gray-200">
               <button id="tab-login" class="flex-1 py-3 font-medium ${loginTab === 'login' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-500'}">
-                ログイン
+                ルーム作成
               </button>
               <button id="tab-delete" class="flex-1 py-3 font-medium ${loginTab === 'delete' ? 'text-red-600 border-b-2 border-red-600' : 'text-gray-500'}">
                 ルーム削除
@@ -772,3 +772,4 @@ if (window.firebaseServiceReady) {
     app.init();
   });
 }
+

@@ -32,7 +32,12 @@ class TranslationChatApp {
     }
 
     try {
-      await window.firebaseService.initialize();
+      // Firebase Serviceの初期化確認（既に初期化済みの場合はスキップ）
+      if (window.firebaseService && typeof window.firebaseService.db !== 'undefined') {
+        console.log('✅ Firebase Service already initialized');
+      } else {
+        throw new Error('Firebase Service not properly initialized');
+      }
 
       const urlParams = new URLSearchParams(window.location.search);
       const inviteToken = urlParams.get('invite');

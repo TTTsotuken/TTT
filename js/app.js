@@ -173,9 +173,40 @@ class TranslationChatApp {
 
   async handleAdminLogout() {
     await window.adminAuthService.logout();
-    this.handleLogout();
-    this.setState({ screen: 'admin-login', adminEmail: '', adminPassword: '' });
-    this.showSuccess('ログアウトしました');
+    
+    // チャットからもログアウト
+    if (window.authService.currentRoom) {
+      window.chatService.unwatchAll();
+      await window.authService.leaveRoom();
+    }
+    
+    if (this.inactivityTimer) {
+      clearTimeout(this.inactivityTimer);
+    }
+
+    this.state = {
+      ...this.state,
+      screen: 'admin-login',
+      adminEmail: '',
+      adminPassword: '',
+      roomId: '',
+      password: '',
+      confirmPassword: '',
+      userName: '',
+      messages: [],
+      roomUsers: [],
+      error: '',
+      success: 'ログアウトしました'
+    };
+    
+    this.render();
+    
+    // 成功メッセージを消す
+    setTimeout(() => {
+      if (this.state.success === 'ログアウトしました') {
+        this.setState({ success: '' });
+      }
+    }, 3000);
   }
 
   async handleLogin() {
@@ -462,7 +493,7 @@ class TranslationChatApp {
           ${!isInviteMode ? `
             <div class="flex mb-6 border-b border-gray-200">
               <button id="tab-login" class="flex-1 py-3 font-medium ${loginTab === 'login' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-500'}">
-                ルーム作成
+                ログイン
               </button>
               <button id="tab-delete" class="flex-1 py-3 font-medium ${loginTab === 'delete' ? 'text-red-600 border-b-2 border-red-600' : 'text-gray-500'}">
                 ルーム削除
@@ -772,4 +803,3 @@ if (window.firebaseServiceReady) {
     app.init();
   });
 }
-

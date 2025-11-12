@@ -1,7 +1,7 @@
 class TranslationChatApp {
   constructor() {
     this.state = {
-      screen: 'loading', // 'loading', 'admin-login', 'login', 'chat'
+      screen: 'loading',
       isInviteMode: false,
       adminEmail: '',
       adminPassword: '',
@@ -25,7 +25,6 @@ class TranslationChatApp {
   }
 
   async init() {
-    // Firebase Service準備待ち
     if (!window.firebaseServiceReady) {
       await new Promise(resolve => {
         window.addEventListener('firebaseServiceReady', resolve, { once: true });
@@ -35,13 +34,11 @@ class TranslationChatApp {
     try {
       await window.firebaseService.initialize();
 
-      // 招待リンクチェック
       const urlParams = new URLSearchParams(window.location.search);
       const inviteToken = urlParams.get('invite');
       const inviteRoomId = urlParams.get('roomId');
       const invitePassword = urlParams.get('password');
 
-      // 招待トークンがある場合
       if (inviteToken) {
         const tokenData = window.adminAuthService.validateInviteToken(inviteToken);
         if (tokenData.valid) {
@@ -58,7 +55,6 @@ class TranslationChatApp {
         }
       }
 
-      // 旧形式の招待リンク
       if (inviteRoomId && invitePassword) {
         console.log('📧 招待リンクを検出');
         this.state.isInviteMode = true;
@@ -72,7 +68,6 @@ class TranslationChatApp {
         return;
       }
 
-      // 通常モード：管理者認証チェック
       if (window.adminAuthService.isLoggedIn()) {
         this.state.screen = 'login';
       } else {
@@ -144,7 +139,6 @@ class TranslationChatApp {
     });
   }
 
-  // 🔥 管理者ログイン処理
   async handleAdminLogin() {
     const { adminEmail, adminPassword } = this.state;
 
@@ -166,7 +160,6 @@ class TranslationChatApp {
     }
   }
 
-  // 🔥 管理者ログアウト処理
   async handleAdminLogout() {
     await window.adminAuthService.logout();
     this.handleLogout();
@@ -341,7 +334,6 @@ class TranslationChatApp {
       return;
     }
 
-    // 招待トークンを生成
     const inviteToken = window.adminAuthService.generateInviteToken(roomId, password);
     
     const baseUrl = window.location.origin + window.location.pathname.replace('index.html', '').replace(/\/$/, '');
@@ -382,7 +374,6 @@ class TranslationChatApp {
     }
   }
 
-  // 🔥 管理者ログイン画面
   renderAdminLoginScreen() {
     const { adminEmail, adminPassword, error, success } = this.state;
     
@@ -394,157 +385,6 @@ class TranslationChatApp {
             <h1 class="text-3xl font-bold text-gray-800">管理者ログイン</h1>
             <p class="text-sm text-gray-500 mt-2">Firebase Authentication</p>
           </div>
-        </div>
-      </div>
-    `;
-  }
-
-  // 🔥 管理者ログイン画面のイベント
-  attachAdminLoginEvents() {
-    const emailInput = document.getElementById('admin-email');
-    const passwordInput = document.getElementById('admin-password');
-    const btnLogin = document.getElementById('btn-admin-login');
-
-    if (emailInput) {
-      emailInput.addEventListener('input', (e) => {
-        this.state.adminEmail = e.target.value;
-      });
-    }
-
-    if (passwordInput) {
-      passwordInput.addEventListener('input', (e) => {
-        this.state.adminPassword = e.target.value;
-      });
-
-      passwordInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          this.handleAdminLogin();
-        }
-      });
-    }
-
-    if (btnLogin) {
-      btnLogin.addEventListener('click', () => this.handleAdminLogin());
-    }
-  }
-
-  attachLoginEvents() {
-    document.getElementById('tab-login')?.addEventListener('click', () => {
-      this.setState({ loginTab: 'login', error: '', success: '' });
-    });
-    
-    document.getElementById('tab-delete')?.addEventListener('click', () => {
-      this.setState({ loginTab: 'delete', error: '', success: '', confirmPassword: '' });
-    });
-
-    document.getElementById('btn-admin-logout')?.addEventListener('click', () => {
-      if (confirm('管理者ログアウトしますか？')) {
-        this.handleAdminLogout();
-      }
-    });
-
-    document.getElementById('roomId')?.addEventListener('input', (e) => {
-      this.state.roomId = e.target.value;
-    });
-
-    document.getElementById('password')?.addEventListener('input', (e) => {
-      this.state.password = e.target.value;
-    });
-
-    document.getElementById('userName')?.addEventListener('input', (e) => {
-      this.state.userName = e.target.value;
-    });
-
-    document.getElementById('userLanguage')?.addEventListener('change', (e) => {
-      this.state.userLanguage = e.target.value;
-    });
-
-    document.getElementById('btn-login')?.addEventListener('click', () => this.handleLogin());
-
-    document.getElementById('deleteRoomId')?.addEventListener('input', (e) => {
-      this.state.roomId = e.target.value;
-    });
-
-    document.getElementById('deletePassword')?.addEventListener('input', (e) => {
-      this.state.password = e.target.value;
-    });
-
-    document.getElementById('confirmPassword')?.addEventListener('input', (e) => {
-      this.state.confirmPassword = e.target.value;
-    });
-
-    document.getElementById('btn-delete-room')?.addEventListener('click', () => this.handleDeleteRoom());
-  }
-
-  attachChatEvents() {
-    const messageInput = document.getElementById('message-input');
-    const btnSend = document.getElementById('btn-send');
-    const btnMic = document.getElementById('btn-mic');
-    const btnClear = document.getElementById('btn-clear');
-    const btnLogout = document.getElementById('btn-logout');
-    const btnCopyLink = document.getElementById('btn-copy-link');
-
-    if (messageInput) {
-      messageInput.addEventListener('input', (e) => {
-        this.state.message = e.target.value;
-      });
-
-      messageInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-          e.preventDefault();
-          this.handleSendMessage();
-        }
-      });
-    }
-
-    if (btnSend) {
-      btnSend.addEventListener('click', () => this.handleSendMessage());
-    }
-
-    if (btnMic) {
-      btnMic.addEventListener('click', () => {
-        if (this.state.isRecording) {
-          this.stopRecording();
-        } else {
-          this.startRecording();
-        }
-      });
-    }
-
-    if (btnClear) {
-      btnClear.addEventListener('click', () => this.handleClearMessages());
-    }
-
-    if (btnLogout) {
-      btnLogout.addEventListener('click', () => this.handleLogout());
-    }
-
-    if (btnCopyLink) {
-      btnCopyLink.addEventListener('click', () => this.handleCopyLink());
-    }
-  }
-  
-  scrollToBottom() {
-    setTimeout(() => {
-      const container = document.getElementById('messages-container');
-      if (container) {
-        container.scrollTop = container.scrollHeight;
-      }
-    }, 100);
-  }
-}
-
-// アプリ起動 - Firebase Serviceの準備を待つ
-if (window.firebaseServiceReady) {
-  const app = new TranslationChatApp();
-  app.init();
-} else {
-  window.addEventListener('firebaseServiceReady', () => {
-    const app = new TranslationChatApp();
-    app.init();
-  });
-}>
 
           ${error ? `<div class="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">${error}</div>` : ''}
           ${success ? `<div class="mb-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">${success}</div>` : ''}
@@ -771,4 +611,154 @@ if (window.firebaseServiceReady) {
               <span>Enterキーで送信</span>
               <span>🌐 MyMemory • 接続中</span>
             </div>
-          </div
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  attachAdminLoginEvents() {
+    const emailInput = document.getElementById('admin-email');
+    const passwordInput = document.getElementById('admin-password');
+    const btnLogin = document.getElementById('btn-admin-login');
+
+    if (emailInput) {
+      emailInput.addEventListener('input', (e) => {
+        this.state.adminEmail = e.target.value;
+      });
+    }
+
+    if (passwordInput) {
+      passwordInput.addEventListener('input', (e) => {
+        this.state.adminPassword = e.target.value;
+      });
+
+      passwordInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          this.handleAdminLogin();
+        }
+      });
+    }
+
+    if (btnLogin) {
+      btnLogin.addEventListener('click', () => this.handleAdminLogin());
+    }
+  }
+
+  attachLoginEvents() {
+    document.getElementById('tab-login')?.addEventListener('click', () => {
+      this.setState({ loginTab: 'login', error: '', success: '' });
+    });
+    
+    document.getElementById('tab-delete')?.addEventListener('click', () => {
+      this.setState({ loginTab: 'delete', error: '', success: '', confirmPassword: '' });
+    });
+
+    document.getElementById('btn-admin-logout')?.addEventListener('click', () => {
+      if (confirm('管理者ログアウトしますか？')) {
+        this.handleAdminLogout();
+      }
+    });
+
+    document.getElementById('roomId')?.addEventListener('input', (e) => {
+      this.state.roomId = e.target.value;
+    });
+
+    document.getElementById('password')?.addEventListener('input', (e) => {
+      this.state.password = e.target.value;
+    });
+
+    document.getElementById('userName')?.addEventListener('input', (e) => {
+      this.state.userName = e.target.value;
+    });
+
+    document.getElementById('userLanguage')?.addEventListener('change', (e) => {
+      this.state.userLanguage = e.target.value;
+    });
+
+    document.getElementById('btn-login')?.addEventListener('click', () => this.handleLogin());
+
+    document.getElementById('deleteRoomId')?.addEventListener('input', (e) => {
+      this.state.roomId = e.target.value;
+    });
+
+    document.getElementById('deletePassword')?.addEventListener('input', (e) => {
+      this.state.password = e.target.value;
+    });
+
+    document.getElementById('confirmPassword')?.addEventListener('input', (e) => {
+      this.state.confirmPassword = e.target.value;
+    });
+
+    document.getElementById('btn-delete-room')?.addEventListener('click', () => this.handleDeleteRoom());
+  }
+
+  attachChatEvents() {
+    const messageInput = document.getElementById('message-input');
+    const btnSend = document.getElementById('btn-send');
+    const btnMic = document.getElementById('btn-mic');
+    const btnClear = document.getElementById('btn-clear');
+    const btnLogout = document.getElementById('btn-logout');
+    const btnCopyLink = document.getElementById('btn-copy-link');
+
+    if (messageInput) {
+      messageInput.addEventListener('input', (e) => {
+        this.state.message = e.target.value;
+      });
+
+      messageInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          this.handleSendMessage();
+        }
+      });
+    }
+
+    if (btnSend) {
+      btnSend.addEventListener('click', () => this.handleSendMessage());
+    }
+
+    if (btnMic) {
+      btnMic.addEventListener('click', () => {
+        if (this.state.isRecording) {
+          this.stopRecording();
+        } else {
+          this.startRecording();
+        }
+      });
+    }
+
+    if (btnClear) {
+      btnClear.addEventListener('click', () => this.handleClearMessages());
+    }
+
+    if (btnLogout) {
+      btnLogout.addEventListener('click', () => this.handleLogout());
+    }
+
+    if (btnCopyLink) {
+      btnCopyLink.addEventListener('click', () => this.handleCopyLink());
+    }
+  }
+  
+  scrollToBottom() {
+    setTimeout(() => {
+      const container = document.getElementById('messages-container');
+      if (container) {
+        container.scrollTop = container.scrollHeight;
+      }
+    }, 100);
+  }
+}
+
+// アプリ起動
+if (window.firebaseServiceReady) {
+  const app = new TranslationChatApp();
+  app.init();
+} else {
+  window.addEventListener('firebaseServiceReady', () => {
+    const app = new TranslationChatApp();
+    app.init();
+  });
+}

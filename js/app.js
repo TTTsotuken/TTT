@@ -32,18 +32,18 @@ class TranslationChatApp {
     }
 
     try {
-      // Firebase Serviceの初期化確認
-      console.log('🔍 Firebase Service check:', {
+      // Firebase Service check
+      console.log('Firebase Service check:', {
         exists: !!window.firebaseService,
-        hasDb: window.firebaseService?.db !== undefined,
-        hasAuth: window.firebaseService?.auth !== undefined
+        hasDatabase: !!window.firebaseService?.database,
+        hasApp: !!window.firebaseService?.app
       });
       
       if (!window.firebaseService) {
         throw new Error('Firebase Service not found');
       }
       
-      console.log('✅ Firebase Service ready');
+      console.log('Firebase Service ready');
 
       const urlParams = new URLSearchParams(window.location.search);
       const inviteToken = urlParams.get('invite');
@@ -53,7 +53,7 @@ class TranslationChatApp {
       if (inviteToken) {
         const tokenData = window.adminAuthService.validateInviteToken(inviteToken);
         if (tokenData.valid) {
-          console.log('✅ 有効な招待トークンを検出');
+          console.log('Valid invite token detected');
           this.state.isInviteMode = true;
           this.state.roomId = tokenData.roomId;
           this.state.password = tokenData.password;
@@ -67,7 +67,7 @@ class TranslationChatApp {
       }
 
       if (inviteRoomId && invitePassword) {
-        console.log('📧 招待リンクを検出');
+        console.log('Invite link detected');
         this.state.isInviteMode = true;
         this.state.roomId = inviteRoomId;
         this.state.password = invitePassword;
@@ -88,7 +88,7 @@ class TranslationChatApp {
       this.render();
       this.setupBeforeUnload();
     } catch (error) {
-      console.error('初期化エラー:', error);
+      console.error('Initialization error:', error);
       this.showInitError('アプリの初期化に失敗しました。');
     }
   }
@@ -97,7 +97,7 @@ class TranslationChatApp {
     document.getElementById('app').innerHTML = `
       <div class="min-h-screen bg-red-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-lg shadow-xl p-8 max-w-md">
-          <h2 class="text-2xl font-bold text-red-600 mb-4">❌ エラー</h2>
+          <h2 class="text-2xl font-bold text-red-600 mb-4">エラー</h2>
           <p class="text-gray-700 mb-4">${message}</p>
           <button onclick="location.reload()" class="mt-4 w-full bg-indigo-600 text-white py-2 px-4 rounded-lg hover:bg-indigo-700">
             再読み込み

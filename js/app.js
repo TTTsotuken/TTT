@@ -304,17 +304,19 @@ class TranslationChatApp {
     }
 
     try {
-      this.setState({ isTranslating: true });
+      // メッセージを保存してから状態を更新
+      const messageToSend = message;
+      this.setState({ message: '', isTranslating: true });
       
       await window.chatService.sendMessage(
         window.authService.currentRoom.roomId,
         window.authService.currentUser.userName,
         window.authService.currentUser.userLanguage,
-        message,
+        messageToSend,
         otherUser.language
       );
 
-      this.setState({ message: '', isTranslating: false });
+      this.setState({ isTranslating: false });
     } catch (error) {
       this.setState({ isTranslating: false });
       this.showError('メッセージの送信に失敗しました');

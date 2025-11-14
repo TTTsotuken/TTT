@@ -770,25 +770,32 @@ class TranslationChatApp {
         // テキストエリアの高さを自動調整
         e.target.style.height = 'auto';
         e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+        
+        // 送信ボタンの状態を更新（再レンダリング）
+        this.updateSendButton();
       });
 
       // キー押下イベント（Enterで送信、Shift+Enterで改行）
       messageInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
           e.preventDefault();
-          if (this.state.message.trim() && this.state.roomUsers.length >= 2 && !this.state.isTranslating) {
-            this.handleSendMessage();
-          }
+          console.log('Enterキー押下 - メッセージ送信試行');
+          this.handleSendMessage();
         }
       });
     }
 
     if (btnSend) {
+      console.log('送信ボタンイベント登録:', btnSend);
       btnSend.addEventListener('click', (e) => {
         e.preventDefault();
-        if (this.state.message.trim() && this.state.roomUsers.length >= 2 && !this.state.isTranslating) {
-          this.handleSendMessage();
-        }
+        e.stopPropagation();
+        console.log('送信ボタンクリック!', {
+          message: this.state.message,
+          roomUsers: this.state.roomUsers.length,
+          isTranslating: this.state.isTranslating
+        });
+        this.handleSendMessage();
       });
     }
 
@@ -812,6 +819,24 @@ class TranslationChatApp {
 
     if (btnCopyLink) {
       btnCopyLink.addEventListener('click', () => this.handleCopyLink());
+    }
+  }
+
+  // 送信ボタンの状態を更新
+  updateSendButton() {
+    const btnSend = document.getElementById('btn-send');
+    if (btnSend) {
+      const canSend = this.state.message.trim() && 
+                      this.state.roomUsers.length >= 2 && 
+                      !this.state.isTranslating;
+      
+      if (canSend) {
+        btnSend.disabled = false;
+        btnSend.classList.remove('opacity-50', 'cursor-not-allowed');
+      } else {
+        btnSend.disabled = true;
+        btnSend.classList.add('opacity-50', 'cursor-not-allowed');
+      }
     }
   }
   

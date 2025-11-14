@@ -273,20 +273,46 @@ class TranslationChatApp {
   }
 
   async handleSendMessage() {
+    console.log('handleSendMessage 呼び出し', {
+      message: this.state.message,
+      roomUsers: this.state.roomUsers,
+      isTranslating: this.state.isTranslating
+    });
+
     const { message, roomUsers } = this.state;
     
-    if (!message.trim()) return;
+    if (!message.trim()) {
+      console.log('メッセージが空です');
+      return;
+    }
+
+    if (roomUsers.length < 2) {
+      console.log('相手が参加していません');
+      this.showError('相手がまだ参加していません');
+      return;
+    }
+
+    if (this.state.isTranslating) {
+      console.log('既に翻訳中です');
+      return;
+    }
 
     const otherUser = roomUsers.find(u => u.name !== window.authService.currentUser.userName);
     if (!otherUser) {
+      console.log('相手ユーザーが見つかりません');
       this.showError('相手がまだ参加していません');
       return;
     }
 
     try {
+      console.log('メッセージ送信開始...');
       // メッセージを保存してから状態を更新
       const messageToSend = message;
-      this.setState({ message: '', isTranslating: true });
+      
+      // まず状態をクリアして翻訳中にする
+      this.state.message = '';
+      this.state.isTranslating = true;
+      this.render(); // 再レンダリング
       
       await window.chatService.sendMessage(
         window.authService.currentRoom.roomId,
@@ -296,8 +322,10 @@ class TranslationChatApp {
         otherUser.language
       );
 
+      console.log('メッセージ送信成功');
       this.setState({ isTranslating: false });
     } catch (error) {
+      console.error('メッセージ送信エラー:', error);
       this.setState({ isTranslating: false });
       this.showError('メッセージの送信に失敗しました');
     }
@@ -657,14 +685,16 @@ class TranslationChatApp {
           <div class="max-w-4xl mx-auto">
             ${roomUsers.length < 2 ? '<div class="mb-2 text-center text-sm text-yellow-700 bg-yellow-50 py-2 px-4 rounded-lg">⚠️ 相手が参加するまでメッセージは送信できません</div>' : ''}
             <div class="flex gap-2">
-              <button id="btn-mic" class="p-3 rounded-lg ${isRecording ? 'bg-red-600 text-white' : 'bg-gray-200 text-gray-700'} ${roomUsers.length < 2 ? 'opacity-50 cursor-not-allowed' : ''}" ${roomUsers.length < 2 ? 'disabled' : ''}>
+              <button id="btn-mic" class="p-3 rounded-lg ${isRecording ? 'bg-red-600 text-white' : 'bg-gray-200 text-gray-700'} ${roomUsers.length < 2 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-300 cursor-pointer'}" ${roomUsers.length < 2 ? 'disabled' : ''} type="button">
                 ${isRecording ? '🎙️' : '🎤'}
               </button>
               <textarea id="message-input" rows="1" placeholder="${isTranslating ? '翻訳中...' : roomUsers.length < 2 ? '相手の参加を待っています...' : 'メッセージを入力... (Shift+Enterで改行)'}" 
                 class="flex-1 px-4 py-2 border border-gray-300 rounded-lg resize-none ${roomUsers.length < 2 || isTranslating ? 'bg-gray-100' : ''}" 
                 style="max-height: 120px; overflow-y: auto;"
                 ${roomUsers.length < 2 || isTranslating ? 'disabled' : ''}>${message}</textarea>
-              <button id="btn-send" class="bg-indigo-600 text-white p-3 rounded-lg hover:bg-indigo-700 ${!message.trim() || roomUsers.length < 2 || isTranslating ? 'opacity-50 cursor-not-allowed' : ''}" ${!message.trim() || roomUsers.length < 2 || isTranslating ? 'disabled' : ''}>
+              <button id="btn-send" class="bg-indigo-600 text-white p-3 rounded-lg font-bold text-xl flex items-center justify-center min-w-[50px] ${message.trim() && roomUsers.length >= 2 && !isTranslating ? 'hover:bg-indigo-700 cursor-pointer' : 'opacity-50 cursor-not-allowed'}" 
+                ${!message.trim() || roomUsers.length < 2 || isTranslating ? 'disabled' : ''}
+                type="button">
                 ➤
               </button>
             </div>

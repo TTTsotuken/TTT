@@ -123,39 +123,19 @@ class TranslationChatApp {
   }
 
   setupBeforeUnload() {
-    // beforeunloadイベント: タブを閉じる前に実行
-    window.addEventListener('beforeunload', (e) => {
+    // onDisconnectが設定されているので、シンプルに
+    window.addEventListener('beforeunload', () => {
       if (window.authService.currentRoom && window.authService.currentUser) {
-        // 同期的に退出処理を実行
-        const roomId = window.authService.currentRoom.roomId;
-        const userId = window.authService.currentUser.userId;
-        
-        // navigatorがbeaconをサポートしている場合は使用（より確実）
-        if (navigator.sendBeacon) {
-          console.log('🚀 Beacon APIで退出処理を送信');
-          // Firebaseへの直接的な削除は困難なため、authServiceの同期処理に任せる
-        }
-        
-        // 退出処理を同期的に実行
-        window.authService.leaveRoom();
+        console.log('🚪 ページ離脱: onDisconnectが自動処理します');
+        // onDisconnectが自動的に処理するため、ここでは何もしない
       }
     });
 
-    // pagehideイベント: より確実なクリーンアップ（モバイル対応）
+    // バックアップ: pagehideでも念のため実行
     window.addEventListener('pagehide', () => {
       if (window.authService.currentRoom && window.authService.currentUser) {
-        console.log('📱 pagehideイベント: 退出処理実行');
+        console.log('📱 pagehide: 退出処理実行');
         window.authService.leaveRoom();
-      }
-    });
-
-    // visibilitychangeイベント: タブが非表示になった際の処理
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'hidden') {
-        if (window.authService.currentRoom && window.authService.currentUser) {
-          console.log('👁️ タブ非表示: 退出処理実行');
-          window.authService.leaveRoom();
-        }
       }
     });
   }
@@ -657,10 +637,10 @@ class TranslationChatApp {
                 <div class="flex ${isOwn ? 'justify-end' : 'justify-start'}">
                   <div class="max-w-xs lg:max-w-md rounded-2xl p-4 ${isOwn ? 'bg-indigo-600 text-white' : 'bg-white text-gray-800 shadow-md'}">
                     <div class="font-medium text-sm mb-1">${msg.sender}</div>
-                    <div class="break-words">${isOwn ? msg.originalText : msg.translatedText}</div>
+                    <div class="break-words whitespace-pre-wrap">${isOwn ? msg.originalText : msg.translatedText}</div>
                     ${!isOwn && msg.originalText !== msg.translatedText ? `
                       <div class="text-xs mt-2 pt-2 border-t ${isOwn ? 'border-indigo-400 text-indigo-200' : 'border-gray-200 text-gray-500'}">
-                        原文: ${msg.originalText}
+                        原文: <span class="whitespace-pre-wrap">${msg.originalText}</span>
                       </div>
                     ` : ''}
                     <div class="text-xs mt-2 ${isOwn ? 'text-indigo-200' : 'text-gray-400'}">
@@ -680,15 +660,16 @@ class TranslationChatApp {
               <button id="btn-mic" class="p-3 rounded-lg ${isRecording ? 'bg-red-600 text-white' : 'bg-gray-200 text-gray-700'} ${roomUsers.length < 2 ? 'opacity-50 cursor-not-allowed' : ''}" ${roomUsers.length < 2 ? 'disabled' : ''}>
                 ${isRecording ? '🎙️' : '🎤'}
               </button>
-              <input type="text" id="message-input" value="${message}" placeholder="${isTranslating ? '翻訳中...' : roomUsers.length < 2 ? '相手の参加を待っています...' : 'メッセージを入力...'}" 
-                class="flex-1 px-4 py-2 border border-gray-300 rounded-lg ${roomUsers.length < 2 || isTranslating ? 'bg-gray-100' : ''}" 
-                ${roomUsers.length < 2 || isTranslating ? 'disabled' : ''}>
+              <textarea id="message-input" rows="1" placeholder="${isTranslating ? '翻訳中...' : roomUsers.length < 2 ? '相手の参加を待っています...' : 'メッセージを入力... (Shift+Enterで改行)'}" 
+                class="flex-1 px-4 py-2 border border-gray-300 rounded-lg resize-none ${roomUsers.length < 2 || isTranslating ? 'bg-gray-100' : ''}" 
+                style="max-height: 120px; overflow-y: auto;"
+                ${roomUsers.length < 2 || isTranslating ? 'disabled' : ''}>${message}</textarea>
               <button id="btn-send" class="bg-indigo-600 text-white p-3 rounded-lg hover:bg-indigo-700 ${!message.trim() || roomUsers.length < 2 || isTranslating ? 'opacity-50 cursor-not-allowed' : ''}" ${!message.trim() || roomUsers.length < 2 || isTranslating ? 'disabled' : ''}>
                 ➤
               </button>
             </div>
             <div class="flex items-center justify-between mt-2 text-xs text-gray-500">
-              <span>Enterキーで送信</span>
+              <span>Enterで送信 • Shift+Enterで改行</span>
               <span>🌐 Gemini AI • 接続中</span>
             </div>
           </div>
@@ -783,20 +764,32 @@ class TranslationChatApp {
     const btnCopyLink = document.getElementById('btn-copy-link');
 
     if (messageInput) {
+      // 入力イベント
       messageInput.addEventListener('input', (e) => {
         this.state.message = e.target.value;
+        // テキストエリアの高さを自動調整
+        e.target.style.height = 'auto';
+        e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
       });
 
-      messageInput.addEventListener('keypress', (e) => {
+      // キー押下イベント（Enterで送信、Shift+Enterで改行）
+      messageInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
           e.preventDefault();
-          this.handleSendMessage();
+          if (this.state.message.trim() && this.state.roomUsers.length >= 2 && !this.state.isTranslating) {
+            this.handleSendMessage();
+          }
         }
       });
     }
 
     if (btnSend) {
-      btnSend.addEventListener('click', () => this.handleSendMessage());
+      btnSend.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (this.state.message.trim() && this.state.roomUsers.length >= 2 && !this.state.isTranslating) {
+          this.handleSendMessage();
+        }
+      });
     }
 
     if (btnMic) {

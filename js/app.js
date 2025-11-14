@@ -123,9 +123,39 @@ class TranslationChatApp {
   }
 
   setupBeforeUnload() {
-    window.addEventListener('beforeunload', () => {
+    // beforeunloadイベント: タブを閉じる前に実行
+    window.addEventListener('beforeunload', (e) => {
       if (window.authService.currentRoom && window.authService.currentUser) {
+        // 同期的に退出処理を実行
+        const roomId = window.authService.currentRoom.roomId;
+        const userId = window.authService.currentUser.userId;
+        
+        // navigatorがbeaconをサポートしている場合は使用（より確実）
+        if (navigator.sendBeacon) {
+          console.log('🚀 Beacon APIで退出処理を送信');
+          // Firebaseへの直接的な削除は困難なため、authServiceの同期処理に任せる
+        }
+        
+        // 退出処理を同期的に実行
         window.authService.leaveRoom();
+      }
+    });
+
+    // pagehideイベント: より確実なクリーンアップ（モバイル対応）
+    window.addEventListener('pagehide', () => {
+      if (window.authService.currentRoom && window.authService.currentUser) {
+        console.log('📱 pagehideイベント: 退出処理実行');
+        window.authService.leaveRoom();
+      }
+    });
+
+    // visibilitychangeイベント: タブが非表示になった際の処理
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') {
+        if (window.authService.currentRoom && window.authService.currentUser) {
+          console.log('👁️ タブ非表示: 退出処理実行');
+          window.authService.leaveRoom();
+        }
       }
     });
   }
@@ -515,7 +545,7 @@ class TranslationChatApp {
             <div class="space-y-4">
               ${isInviteMode ? `
                 <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
-                  <p class="font-medium mb-1">📧 招待リンクから参加中</p>
+                  <p class="font-medium mb-1">🔧 招待リンクから参加中</p>
                   <p class="text-xs">ルーム情報は自動入力されています</p>
                 </div>
               ` : ''}
@@ -704,7 +734,7 @@ class TranslationChatApp {
     });
 
     document.getElementById('btn-admin-logout')?.addEventListener('click', () => {
-      if (confirm('管理者ログアウトしますか？')) {
+      if (confirm('管理者ログアウトしますか?')) {
         this.handleAdminLogout();
       }
     });

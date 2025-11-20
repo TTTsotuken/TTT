@@ -1,3 +1,12 @@
+function escapeHtml(text) {
+  if (!text) return text;
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
 class TranslationChatApp {
   constructor() {
     this.state = {
@@ -664,11 +673,11 @@ class TranslationChatApp {
               return `
                 <div class="flex ${isOwn ? 'justify-end' : 'justify-start'}">
                   <div class="max-w-xs lg:max-w-md rounded-2xl p-4 ${isOwn ? 'bg-indigo-600 text-white' : 'bg-white text-gray-800 shadow-md'}">
-                    <div class="font-medium text-sm mb-1">${msg.sender}</div>
-                    <div class="break-words whitespace-pre-wrap">${isOwn ? msg.originalText : msg.translatedText}</div>
+                    <div class="font-medium text-sm mb-1">${escapeHtml(msg.sender)}</div>
+                    <div class="break-words whitespace-pre-wrap">${isOwn ? escapeHtml(msg.originalText) : escapeHtml(msg.translatedText)}</div>
                     ${!isOwn && msg.originalText !== msg.translatedText ? `
                       <div class="text-xs mt-2 pt-2 border-t ${isOwn ? 'border-indigo-400 text-indigo-200' : 'border-gray-200 text-gray-500'}">
-                        原文: <span class="whitespace-pre-wrap">${msg.originalText}</span>
+                        原文: <span class="whitespace-pre-wrap">${escapeHtml(msg.originalText)}</span>
                       </div>
                     ` : ''}
                     <div class="text-xs mt-2 ${isOwn ? 'text-indigo-200' : 'text-gray-400'}">

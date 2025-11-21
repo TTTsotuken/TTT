@@ -1,24 +1,36 @@
 // LibreTranslate翻訳サービス (完全無料・APIキー不要)
 class LibreTranslateService {
   constructor() {
-    // 公式の無料サーバー
+    // 公式サーバー
     this.apiUrl = 'https://libretranslate.com/translate';
     
-    // LibreTranslate言語コードマッピング
+    // LibreTranslate言語コードマッピング（公式サポート言語のみ）
     this.languageMap = {
-      'ja': 'ja',
-      'en': 'en',
-      'zh-CN': 'zh',
-      'ko': 'ko',
-      'es': 'es',
-      'fr': 'fr',
-      'de': 'de',
-      'it': 'it',
-      'pt': 'pt',
-      'ru': 'ru',
-      'ar': 'ar',
-      'hi': 'hi',
-
+      'ja': 'ja',  // 日本語
+      'en': 'en',  // 英語
+      'zh': 'zh',  // 中国語
+      'ko': 'ko',  // 韓国語
+      'es': 'es',  // スペイン語
+      'fr': 'fr',  // フランス語
+      'de': 'de',  // ドイツ語
+      'it': 'it',  // イタリア語
+      'pt': 'pt',  // ポルトガル語
+      'ru': 'ru',  // ロシア語
+      'ar': 'ar',  // アラビア語
+      'hi': 'hi',  // ヒンディー語
+      'th': 'th',  // タイ語
+      'vi': 'vi',  // ベトナム語
+      'tr': 'tr',  // トルコ語
+      'pl': 'pl',  // ポーランド語
+      'uk': 'uk',  // ウクライナ語
+      'id': 'id',  // インドネシア語
+      'sv': 'sv',  // スウェーデン語
+      'cs': 'cs',  // チェコ語
+      'fi': 'fi',  // フィンランド語
+      'el': 'el',  // ギリシャ語
+      'he': 'he',  // ヘブライ語
+      'hu': 'hu',  // ハンガリー語
+      'fa': 'fa'   // ペルシャ語
     };
   }
 

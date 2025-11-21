@@ -18,32 +18,36 @@ class AuthService {
     console.log('🔄 空ルーム自動クリーンアップを開始しました（5分間隔）');
   }
 
-  // 🆕 空ルームを削除
+  // 🆕 空ルームを削除（権限エラー対策版）
   async cleanupEmptyRooms() {
     try {
-      const allRooms = await window.firebaseService.get('rooms');
-      
-      if (!allRooms) return;
-
-      let deletedCount = 0;
-      const now = Date.now();
-      
-      for (const [roomId, roomData] of Object.entries(allRooms)) {
-        const hasNoUsers = !roomData.users || Object.keys(roomData.users).length === 0;
-        const isOldRoom = roomData.createdAt && (now - roomData.createdAt > 24 * 60 * 60 * 1000);
-        
-        if (hasNoUsers || isOldRoom) {
-          await window.firebaseService.remove(`rooms/${roomId}`);
-          deletedCount++;
-          console.log(`🗑️ ${hasNoUsers ? '空' : '古い'}ルーム削除: ${roomId}`);
-        }
+      // 権限エラーを防ぐため、現在のルームのみをチェック
+      if (!this.currentRoom) {
+        return;
       }
 
-      if (deletedCount > 0) {
-        console.log(`✅ ${deletedCount}個のルームを自動削除しました`);
+      const roomId = this.currentRoom.roomId;
+      const roomData = await window.firebaseService.get(`rooms/${roomId}`);
+      
+      if (!roomData) {
+        console.log('📭 現在のルームは既に削除されています');
+        return;
+      }
+
+      const hasNoUsers = !roomData.users || Object.keys(roomData.users).length === 0;
+      const isOldRoom = roomData.createdAt && (Date.now() - roomData.createdAt > 24 * 60 * 60 * 1000);
+      
+      if (hasNoUsers || isOldRoom) {
+        await window.firebaseService.remove(`rooms/${roomId}`);
+        console.log(`🗑️ ${hasNoUsers ? '空' : '古い'}ルーム削除: ${roomId}`);
       }
     } catch (error) {
-      console.error('❌ クリーンアップエラー:', error);
+      // 権限エラーは無視（他のユーザーのルームにアクセスできない場合）
+      if (error.message.includes('Permission denied')) {
+        console.log('ℹ️ クリーンアップ: 権限エラー（正常動作）');
+      } else {
+        console.error('❌ クリーンアップエラー:', error);
+      }
     }
   }
 

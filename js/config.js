@@ -11,8 +11,8 @@ const CONFIG = {
     appId: "1:731320381667:web:9b256ebf09de1e935455d6"
   },
   
-  // LibreTranslate公式対応言語のみ（51言語）
-  // ※ネパール語(ne)は非対応のため削除
+  // ★★★ LibreTranslate公式対応言語のみ（50言語）★★★
+  // ネパール語(ne)、zh-CNは非対応のため削除
   languages: [
     { code: 'ja', name: '日本語' },
     { code: 'en', name: 'English' },

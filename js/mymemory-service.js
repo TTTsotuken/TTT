@@ -4,7 +4,7 @@ class MyMemoryTranslationService {
   constructor() {
     this.apiUrl = 'https://api.mymemory.translated.net/get';
     
-    // MyMemory対応言語マッピング（ISO 639-1コード）
+    // MyMemory対応言語マッピング
     this.languageMap = {
       'ja': 'ja',
       'en': 'en',
@@ -160,6 +160,15 @@ class MyMemoryTranslationService {
         }
       });
       
+      // レート制限エラーの特別処理
+      if (response.status === 429) {
+        const retryAfter = response.headers.get('Retry-After');
+        console.error('🚫 レート制限超過（HTTP 429）:', retryAfter ? `${retryAfter}秒後に再試行可能` : '制限超過');
+        
+        // エラーメッセージを投げる
+        throw new Error(`RATE_LIMIT_EXCEEDED:${retryAfter || 'unknown'}`);
+      }
+      
       if (!response.ok) {
         console.error('❌ MyMemory APIエラー:', response.status, response.statusText);
         throw new Error(`MyMemory API error: ${response.status}`);
@@ -168,7 +177,12 @@ class MyMemoryTranslationService {
       const data = await response.json();
       console.log('📦 MyMemory APIレスポンス:', data);
       
-      // レスポンスコードチェック
+      // レスポンスコードチェック（MyMemoryは200以外の場合もある）
+      if (data.responseStatus === 403) {
+        console.error('🚫 1日の制限超過（responseStatus: 403）');
+        throw new Error('DAILY_LIMIT_EXCEEDED');
+      }
+      
       if (data.responseStatus !== 200) {
         console.error('❌ 翻訳失敗:', data.responseDetails);
         throw new Error(data.responseDetails || '翻訳に失敗しました');
@@ -190,12 +204,20 @@ class MyMemoryTranslationService {
       
     } catch (error) {
       console.error('❌ 翻訳エラー:', error);
-      console.error('エラー詳細:', {
-        message: error.message,
-        stack: error.stack
-      });
       
-      // エラー時は元のテキストを返す
+      // エラーの種類に応じて処理
+      if (error.message.startsWith('RATE_LIMIT_EXCEEDED')) {
+        const retryAfter = error.message.split(':')[1];
+        console.warn(`⏳ レート制限: ${retryAfter !== 'unknown' ? retryAfter + '秒後に再試行可能' : '制限超過'}`);
+        throw new Error('翻訳APIのレート制限を超えました。しばらく待ってから再度お試しください。');
+      }
+      
+      if (error.message === 'DAILY_LIMIT_EXCEEDED') {
+        console.warn('📅 1日の無料枠（5,000文字）を超えました');
+        throw new Error('本日の無料翻訳枠（5,000文字）を使い切りました。明日またご利用ください。');
+      }
+      
+      // その他のエラー時は元のテキストを返す
       console.warn('⚠️ 翻訳に失敗したため、元のテキストを返します');
       return text;
     }

@@ -23,12 +23,13 @@
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
         import { getDatabase, ref, get, set, update, remove, onValue, off, serverTimestamp, push } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+        // 🔥 Firebase Authentication を追加
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 
         // Firebase初期化
         const app = initializeApp(CONFIG.firebase);
         const database = getDatabase(app);
-        const auth = getAuth(app);
+        const auth = getAuth(app); // 🔥 認証初期化
 
         class FirebaseService {
             constructor() {
@@ -78,17 +79,20 @@
         window.firebaseService = new FirebaseService();
         console.log('✅ Firebase Service セット完了');
 
+        // 🔥 Firebase Authentication Service
         class AdminAuthService {
             constructor() {
                 this.auth = auth;
                 this.currentUser = null;
                 
+                // 認証状態の監視
                 onAuthStateChanged(this.auth, (user) => {
                     this.currentUser = user;
                     console.log('認証状態:', user ? '✅ ログイン中' : '❌ 未ログイン');
                 });
             }
 
+            // メール/パスワードでログイン
             async login(email, password) {
                 try {
                     const userCredential = await signInWithEmailAndPassword(this.auth, email, password);
@@ -110,6 +114,7 @@
                 }
             }
 
+            // ログアウト
             async logout() {
                 try {
                     await signOut(this.auth);
@@ -121,15 +126,18 @@
                 }
             }
 
+            // ログイン状態確認
             isLoggedIn() {
                 return this.currentUser !== null;
             }
 
+            // 招待トークン生成
             generateInviteToken(roomId, password) {
                 const data = `${roomId}:${password}:${Date.now()}`;
                 return btoa(data);
             }
 
+            // 招待トークン検証
             validateInviteToken(token) {
                 try {
                     const decoded = atob(token);
@@ -153,8 +161,8 @@
         console.log('✅ Admin Auth Service 初期化完了');
     </script>
     
-    <!-- 🆕 Google Translate翻訳サービスを読み込む -->
-    <script src="./js/google-translate-service.js"></script>
+    <!-- 🌐 LibreTranslate翻訳サービスを読み込む -->
+    <script src="./js/libretranslate-service.js"></script>
     
     <!-- 他のサービスを読み込む -->
     <script src="./js/auth-service.js"></script>
@@ -162,15 +170,17 @@
     
     <!-- 最後にアプリを読み込む -->
     <script>
+        // 全サービスが読み込まれたことを確認
         window.addEventListener('load', () => {
             console.log('Services check:', {
                 firebase: !!window.firebaseService,
-                translation: !!window.googleTranslateService,
+                translation: !!window.libreTranslateService,
                 auth: !!window.authService,
                 chat: !!window.chatService,
                 adminAuth: !!window.adminAuthService
             });
             
+            // Firebase Service準備完了を通知
             window.firebaseServiceReady = true;
             window.dispatchEvent(new Event('firebaseServiceReady'));
         });

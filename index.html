@@ -16,21 +16,18 @@
         </div>
     </div>
     
-    <!-- 設定を最初に読み込む -->
     <script src="./js/config.js"></script>
     <script src="./js/config-gemini.js"></script>
     
-    <!-- Firebase Serviceをインラインで読み込む -->
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
         import { getDatabase, ref, get, set, update, remove, onValue, off, serverTimestamp, push } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
-        // 🔥 Firebase Authentication を追加
-        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        // 🚨 ログイン機能のインポート（getAuth, signInWithEmailAndPasswordなど）は削除済み
 
         // Firebase初期化
         const app = initializeApp(CONFIG.firebase);
         const database = getDatabase(app);
-        const auth = getAuth(app); // 🔥 認証初期化
+        // 🚨 const auth = getAuth(app); は削除済み
 
         class FirebaseService {
             constructor() {
@@ -80,65 +77,30 @@
         window.firebaseService = new FirebaseService();
         console.log('✅ Firebase Service セット完了');
 
-        // 🔥 Firebase Authentication Service
+        // 🔥 認証機能を削除したため、ダミーサービスを定義 (エラー防止)
         class AdminAuthService {
             constructor() {
-                this.auth = auth;
-                this.currentUser = null;
-                
-                // 認証状態の監視
-                onAuthStateChanged(this.auth, (user) => {
-                    this.currentUser = user;
-                    console.log('認証状態:', user ? '✅ ログイン中' : '❌ 未ログイン');
-                });
+                console.log('✅ Admin Auth Service ダミー初期化完了 (認証機能削除済み)');
             }
-
-            // メール/パスワードでログイン
-            async login(email, password) {
-                try {
-                    const userCredential = await signInWithEmailAndPassword(this.auth, email, password);
-                    console.log('✅ Firebase認証成功');
-                    return { success: true, user: userCredential.user };
-                } catch (error) {
-                    console.error('❌ Firebase認証失敗:', error.code);
-                    
-                    let errorMessage = 'ログインに失敗しました';
-                    if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
-                        errorMessage = 'メールアドレスまたはパスワードが正しくありません';
-                    } else if (error.code === 'auth/too-many-requests') {
-                        errorMessage = '試行回数が多すぎます。しばらく待ってから再試行してください';
-                    } else if (error.code === 'auth/invalid-email') {
-                        errorMessage = 'メールアドレスの形式が正しくありません';
-                    }
-                    
-                    return { success: false, error: errorMessage };
-                }
+            // 常にログイン済みとして扱う
+            isLoggedIn() { return true; } 
+            // ログイン処理は成功を返す
+            async login(email, password) { 
+                console.log('認証機能が削除されているため、ログイン処理をスキップしました');
+                return { success: true, user: { uid: 'guest-user', email: 'guest@example.com' } }; 
             }
-
-            // ログアウト
-            async logout() {
-                try {
-                    await signOut(this.auth);
-                    console.log('✅ ログアウト成功');
-                    return { success: true };
-                } catch (error) {
-                    console.error('❌ ログアウト失敗:', error);
-                    return { success: false };
-                }
+            // ログアウト処理は成功を返す
+            async logout() { 
+                console.log('認証機能が削除されているため、ログアウト処理をスキップしました');
+                return { success: true }; 
             }
-
-            // ログイン状態確認
-            isLoggedIn() {
-                return this.currentUser !== null;
-            }
-
-            // 招待トークン生成
+            
+            // 招待トークン関連はそのまま残すか、必要に応じてダミー化
             generateInviteToken(roomId, password) {
                 const data = `${roomId}:${password}:${Date.now()}`;
                 return btoa(data);
             }
 
-            // 招待トークン検証
             validateInviteToken(token) {
                 try {
                     const decoded = atob(token);
@@ -159,17 +121,14 @@
         }
 
         window.adminAuthService = new AdminAuthService();
-        console.log('✅ Admin Auth Service 初期化完了');
+        // 🚨 ログ出力も修正
     </script>
     
-    <!-- LibreTranslate翻訳サービスを読み込む -->
     <script src="./js/gemini-service.js"></script>
     
-    <!-- 他のサービスを読み込む -->
     <script src="./js/auth-service.js"></script>
     <script src="./js/chat-service.js"></script>
     
-    <!-- 最後にアプリを読み込む -->
     <script>
         // 全サービスが読み込まれたことを確認
         window.addEventListener('load', () => {

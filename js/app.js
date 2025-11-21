@@ -372,7 +372,7 @@ class TranslationChatApp {
           <div class="flex items-center justify-between mb-6">
             <div>
               <h1 class="text-3xl font-bold text-gray-800">🌐 翻訳チャット</h1>
-              <p class="text-sm text-blue-600 mt-2">${isInviteMode ? '🎉 招待リンクから参加' : '🌐 LibreTranslate搭載'}</p>
+              <p class="text-sm text-green-600 mt-2">${isInviteMode ? '🎉 招待リンクから参加' : '🌐 LibreTranslate搭載（50言語対応）'}</p>
             </div>
             ${!isInviteMode ? `<button id="btn-admin-logout" class="text-sm text-gray-500 hover:text-red-600 transition-colors" title="管理者ログアウト">🚪 ログアウト</button>` : ''}
           </div>

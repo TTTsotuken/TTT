@@ -1,8 +1,13 @@
 // LibreTranslate翻訳サービス (完全無料・APIキー不要)
 class LibreTranslateService {
   constructor() {
-    // 公式サーバー
-    this.apiUrl = 'https://libretranslate.com/translate';
+    // 複数のミラーサーバーを用意（フォールバック対応）
+    this.apiUrls = [
+      'https://translate.argosopentech.com/translate',  // Argos Open Tech (推奨)
+      'https://libretranslate.de/translate',             // ドイツのミラー
+      'https://translate.terraprint.co/translate'        // Terraprint
+    ];
+    this.currentUrlIndex = 0;
     
     // LibreTranslate言語コードマッピング（拡張版）
     this.languageMap = {

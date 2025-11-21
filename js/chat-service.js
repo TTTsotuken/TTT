@@ -1,4 +1,4 @@
-// チャット機能サービス
+// チャット機能サービス - LibreTranslate対応版
 class ChatService {
   constructor() {
     this.listeners = {};
@@ -9,8 +9,12 @@ class ChatService {
     try {
       console.log('メッセージ送信開始:', { roomId, sender, originalText, targetLang });
       
-      // 翻訳サービスを使用
-      const translatedText = await window.geminiService.translate(originalText, targetLang, senderLang);
+      // LibreTranslateサービスを使用して翻訳
+      const translatedText = await window.libreTranslateService.translate(
+        originalText, 
+        targetLang, 
+        senderLang
+      );
       console.log('翻訳完了:', translatedText);
 
       // メッセージ保存
@@ -105,3 +109,4 @@ class ChatService {
 }
 
 window.chatService = new ChatService();
+console.log('✅ Chat Service 初期化完了 (LibreTranslate対応)');

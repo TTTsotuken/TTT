@@ -32,7 +32,6 @@ class TranslationChatApp {
     }
 
     try {
-      // Firebase Service check
       console.log('Firebase Service check:', {
         exists: !!window.firebaseService,
         hasDatabase: !!window.firebaseService?.database,
@@ -125,6 +124,13 @@ class TranslationChatApp {
   setupBeforeUnload() {
     window.addEventListener('beforeunload', () => {
       if (window.authService.currentRoom && window.authService.currentUser) {
+        console.log('🚪 ページ離脱: onDisconnectが自動処理します');
+      }
+    });
+
+    window.addEventListener('pagehide', () => {
+      if (window.authService.currentRoom && window.authService.currentUser) {
+        console.log('📱 pagehide: 退出処理実行');
         window.authService.leaveRoom();
       }
     });
@@ -161,7 +167,7 @@ class TranslationChatApp {
     const result = await window.adminAuthService.login(adminEmail, adminPassword);
     
     if (result.success) {
-      this.showSuccess('ログインしました！');
+      this.showSuccess('ログインしました!');
       setTimeout(() => {
         this.setState({ screen: 'login', adminEmail: '', adminPassword: '' });
       }, 500);
@@ -172,10 +178,8 @@ class TranslationChatApp {
   }
 
   async handleAdminLogout() {
-    // Firebase認証からログアウト
     await window.adminAuthService.logout();
     
-    // チャットからもログアウト
     if (window.authService.currentRoom) {
       window.chatService.unwatchAll();
       await window.authService.leaveRoom();
@@ -185,7 +189,6 @@ class TranslationChatApp {
       clearTimeout(this.inactivityTimer);
     }
 
-    // 状態を完全リセット
     this.state = {
       screen: 'admin-login',
       isInviteMode: false,
@@ -206,10 +209,8 @@ class TranslationChatApp {
       success: 'ログアウトしました'
     };
     
-    // 画面を再描画
     this.render();
     
-    // 成功メッセージを3秒後に消す
     setTimeout(() => {
       this.state.success = '';
       this.render();
@@ -228,9 +229,9 @@ class TranslationChatApp {
       const result = await window.authService.joinRoom(roomId, password, userName, userLanguage);
       
       this.showSuccess(
-        result.action === 'created' ? '新しいルームを作成しました！' :
-        result.action === 'rejoined' ? 'ルームに再接続しました！' :
-        'ルームに参加しました！'
+        result.action === 'created' ? '新しいルームを作成しました!' :
+        result.action === 'rejoined' ? 'ルームに再接続しました!' :
+        'ルームに参加しました!'
       );
 
       this.setState({ screen: 'chat' });
@@ -265,7 +266,18 @@ class TranslationChatApp {
   async handleSendMessage() {
     const { message, roomUsers } = this.state;
     
-    if (!message.trim()) return;
+    if (!message.trim()) {
+      return;
+    }
+
+    if (roomUsers.length < 2) {
+      this.showError('相手がまだ参加していません');
+      return;
+    }
+
+    if (this.state.isTranslating) {
+      return;
+    }
 
     const otherUser = roomUsers.find(u => u.name !== window.authService.currentUser.userName);
     if (!otherUser) {
@@ -274,18 +286,23 @@ class TranslationChatApp {
     }
 
     try {
-      this.setState({ isTranslating: true });
+      const messageToSend = message;
+      
+      this.state.message = '';
+      this.state.isTranslating = true;
+      this.render();
       
       await window.chatService.sendMessage(
         window.authService.currentRoom.roomId,
         window.authService.currentUser.userName,
         window.authService.currentUser.userLanguage,
-        message,
+        messageToSend,
         otherUser.language
       );
 
-      this.setState({ message: '', isTranslating: false });
+      this.setState({ isTranslating: false });
     } catch (error) {
+      console.error('メッセージ送信エラー:', error);
       this.setState({ isTranslating: false });
       this.showError('メッセージの送信に失敗しました');
     }
@@ -390,7 +407,7 @@ class TranslationChatApp {
 
     try {
       await navigator.clipboard.writeText(inviteLink);
-      this.showSuccess('招待リンクをコピーしました！相手はログイン不要で参加できます。');
+      this.showSuccess('招待リンクをコピーしました!相手はログイン不要で参加できます。');
     } catch (err) {
       this.showError('コピーに失敗しました: ' + err.message);
     }
@@ -487,7 +504,7 @@ class TranslationChatApp {
             <div>
               <h1 class="text-3xl font-bold text-gray-800">🌍 翻訳チャット</h1>
               <p class="text-sm text-blue-600 mt-2">
-                ${isInviteMode ? '🎉 招待リンクから参加' : '🌐 Gemini AI搭載'}
+                ${isInviteMode ? '🎉 招待リンクから参加' : '🌐 LibreTranslate搭載'}
               </p>
             </div>
             ${!isInviteMode ? `
@@ -594,7 +611,7 @@ class TranslationChatApp {
         <div class="bg-indigo-600 text-white p-4 shadow-lg">
           <div class="max-w-4xl mx-auto flex items-center justify-between">
             <div>
-              <h2 class="font-bold text-lg">ルーム: ${roomId} <span class="text-xs bg-blue-500 px-2 py-1 rounded ml-2">🌐 Gemini AI</span></h2>
+              <h2 class="font-bold text-lg">ルーム: ${roomId} <span class="text-xs bg-blue-500 px-2 py-1 rounded ml-2">🌍 Google翻訳</span></h2>
               <p class="text-sm text-indigo-200">${userName} (${langName}) • ${roomUsers.length}人参加中</p>
             </div>
             
@@ -607,7 +624,7 @@ class TranslationChatApp {
         </div>
 
         ${roomUsers.length < 2 ? '<div class="bg-yellow-50 border-b border-yellow-200 p-3 text-center text-yellow-800 text-sm">相手の参加を待っています... (1/2人)</div>' : ''}
-        ${isTranslating ? '<div class="bg-purple-50 border-b border-purple-200 p-3 text-center text-purple-700 text-sm">🌐 Gemini AIで翻訳中...</div>' : ''}
+        ${isTranslating ? '<div class="bg-purple-50 border-b border-purple-200 p-3 text-center text-purple-700 text-sm">🌐 LibreTranslateで翻訳中...</div>' : ''}
         ${error ? `<div class="bg-red-50 border-b border-red-200 p-3 text-center text-red-700 text-sm">${error}</div>` : ''}
         ${success ? `<div class="bg-green-50 border-b border-green-200 p-3 text-center text-green-700 text-sm">${success}</div>` : ''}
 
@@ -617,7 +634,7 @@ class TranslationChatApp {
               <div class="text-center text-gray-500 py-12">
                 <div class="text-6xl mb-4">💬</div>
                 <p class="text-lg font-medium">まだメッセージがありません</p>
-                <p class="text-sm mt-2">AIが自然な翻訳で会話をサポートします！</p>
+                <p class="text-sm mt-2">LibreTranslateが自然な翻訳で会話をサポートします!</p>
               </div>
             ` : messages.map(msg => {
               const isOwn = msg.sender === userName;
@@ -625,10 +642,10 @@ class TranslationChatApp {
                 <div class="flex ${isOwn ? 'justify-end' : 'justify-start'}">
                   <div class="max-w-xs lg:max-w-md rounded-2xl p-4 ${isOwn ? 'bg-indigo-600 text-white' : 'bg-white text-gray-800 shadow-md'}">
                     <div class="font-medium text-sm mb-1">${msg.sender}</div>
-                    <div class="break-words">${isOwn ? msg.originalText : msg.translatedText}</div>
+                    <div class="break-words whitespace-pre-wrap">${isOwn ? msg.originalText : msg.translatedText}</div>
                     ${!isOwn && msg.originalText !== msg.translatedText ? `
                       <div class="text-xs mt-2 pt-2 border-t ${isOwn ? 'border-indigo-400 text-indigo-200' : 'border-gray-200 text-gray-500'}">
-                        原文: ${msg.originalText}
+                        原文: <span class="whitespace-pre-wrap">${msg.originalText}</span>
                       </div>
                     ` : ''}
                     <div class="text-xs mt-2 ${isOwn ? 'text-indigo-200' : 'text-gray-400'}">
@@ -645,19 +662,22 @@ class TranslationChatApp {
           <div class="max-w-4xl mx-auto">
             ${roomUsers.length < 2 ? '<div class="mb-2 text-center text-sm text-yellow-700 bg-yellow-50 py-2 px-4 rounded-lg">⚠️ 相手が参加するまでメッセージは送信できません</div>' : ''}
             <div class="flex gap-2">
-              <button id="btn-mic" class="p-3 rounded-lg ${isRecording ? 'bg-red-600 text-white' : 'bg-gray-200 text-gray-700'} ${roomUsers.length < 2 ? 'opacity-50 cursor-not-allowed' : ''}" ${roomUsers.length < 2 ? 'disabled' : ''}>
+              <button id="btn-mic" class="p-3 rounded-lg ${isRecording ? 'bg-red-600 text-white' : 'bg-gray-200 text-gray-700'} ${roomUsers.length < 2 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-300 cursor-pointer'}" ${roomUsers.length < 2 ? 'disabled' : ''} type="button">
                 ${isRecording ? '🎙️' : '🎤'}
               </button>
-              <input type="text" id="message-input" value="${message}" placeholder="${isTranslating ? '翻訳中...' : roomUsers.length < 2 ? '相手の参加を待っています...' : 'メッセージを入力...'}" 
-                class="flex-1 px-4 py-2 border border-gray-300 rounded-lg ${roomUsers.length < 2 || isTranslating ? 'bg-gray-100' : ''}" 
-                ${roomUsers.length < 2 || isTranslating ? 'disabled' : ''}>
-              <button id="btn-send" class="bg-indigo-600 text-white p-3 rounded-lg hover:bg-indigo-700 ${!message.trim() || roomUsers.length < 2 || isTranslating ? 'opacity-50 cursor-not-allowed' : ''}" ${!message.trim() || roomUsers.length < 2 || isTranslating ? 'disabled' : ''}>
+              <textarea id="message-input" rows="1" placeholder="${isTranslating ? '翻訳中...' : roomUsers.length < 2 ? '相手の参加を待っています...' : 'メッセージを入力... (Shift+Enterで改行)'}" 
+                class="flex-1 px-4 py-2 border border-gray-300 rounded-lg resize-none ${roomUsers.length < 2 || isTranslating ? 'bg-gray-100' : ''}" 
+                style="max-height: 120px; overflow-y: auto;"
+                ${roomUsers.length < 2 || isTranslating ? 'disabled' : ''}>${message}</textarea>
+              <button id="btn-send" class="bg-indigo-600 text-white p-3 rounded-lg font-bold text-xl flex items-center justify-center min-w-[50px] ${message.trim() && roomUsers.length >= 2 && !isTranslating ? 'hover:bg-indigo-700 cursor-pointer' : 'opacity-50 cursor-not-allowed'}" 
+                ${!message.trim() || roomUsers.length < 2 || isTranslating ? 'disabled' : ''}
+                type="button">
                 ➤
               </button>
             </div>
             <div class="flex items-center justify-between mt-2 text-xs text-gray-500">
-              <span>Enterキーで送信</span>
-              <span>🌐 Gemini AI • 接続中</span>
+              <span>Enterで送信 • Shift+Enterで改行</span>
+              <span>🌐 LibreTranslate • 接続中</span>
             </div>
           </div>
         </div>
@@ -704,7 +724,7 @@ class TranslationChatApp {
     });
 
     document.getElementById('btn-admin-logout')?.addEventListener('click', () => {
-      if (confirm('管理者ログアウトしますか？')) {
+      if (confirm('管理者ログアウトしますか?')) {
         this.handleAdminLogout();
       }
     });
@@ -753,9 +773,12 @@ class TranslationChatApp {
     if (messageInput) {
       messageInput.addEventListener('input', (e) => {
         this.state.message = e.target.value;
+        e.target.style.height = 'auto';
+        e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+        this.updateSendButton();
       });
 
-      messageInput.addEventListener('keypress', (e) => {
+      messageInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
           e.preventDefault();
           this.handleSendMessage();
@@ -764,7 +787,11 @@ class TranslationChatApp {
     }
 
     if (btnSend) {
-      btnSend.addEventListener('click', () => this.handleSendMessage());
+      btnSend.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.handleSendMessage();
+      });
     }
 
     if (btnMic) {
@@ -789,6 +816,23 @@ class TranslationChatApp {
       btnCopyLink.addEventListener('click', () => this.handleCopyLink());
     }
   }
+
+  updateSendButton() {
+    const btnSend = document.getElementById('btn-send');
+    if (btnSend) {
+      const canSend = this.state.message.trim() && 
+                      this.state.roomUsers.length >= 2 && 
+                      !this.state.isTranslating;
+      
+      if (canSend) {
+        btnSend.disabled = false;
+        btnSend.classList.remove('opacity-50', 'cursor-not-allowed');
+      } else {
+        btnSend.disabled = true;
+        btnSend.classList.add('opacity-50', 'cursor-not-allowed');
+      }
+    }
+  }
   
   scrollToBottom() {
     setTimeout(() => {
@@ -800,7 +844,6 @@ class TranslationChatApp {
   }
 }
 
-// アプリ起動
 if (window.firebaseServiceReady) {
   const app = new TranslationChatApp();
   app.init();

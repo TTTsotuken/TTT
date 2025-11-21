@@ -229,7 +229,13 @@ class TranslationChatApp {
     } catch (error) {
       console.error('❌ メッセージ送信エラー:', error);
       this.setState({ isTranslating: false });
-      this.showError('メッセージの送信に失敗しました');
+      
+      // レート制限エラーの場合は特別なメッセージを表示
+      if (error.message.includes('レート制限') || error.message.includes('無料翻訳枠')) {
+        this.showError(error.message + ' メッセージは元のテキストで送信されました。');
+      } else {
+        this.showError('メッセージの送信に失敗しました');
+      }
     }
   }
 

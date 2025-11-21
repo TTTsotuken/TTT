@@ -36,7 +36,7 @@ class TranslationChatApp {
         hasApp: !!window.firebaseService?.app
       });
       if (!window.firebaseService) throw new Error('Firebase Service not found');
-      console.log('Firebase Service ready');
+      console.log('✅ Firebase Service ready');
 
       const urlParams = new URLSearchParams(window.location.search);
       const inviteToken = urlParams.get('invite');
@@ -46,7 +46,7 @@ class TranslationChatApp {
       if (inviteToken) {
         const tokenData = window.adminAuthService.validateInviteToken(inviteToken);
         if (tokenData.valid) {
-          console.log('Valid invite token detected');
+          console.log('✅ 有効な招待トークンを検出');
           this.state.isInviteMode = true;
           this.state.roomId = tokenData.roomId;
           this.state.password = tokenData.password;
@@ -59,7 +59,7 @@ class TranslationChatApp {
         }
       }
       if (inviteRoomId && invitePassword) {
-        console.log('Invite link detected');
+        console.log('✅ 招待リンクを検出');
         this.state.isInviteMode = true;
         this.state.roomId = inviteRoomId;
         this.state.password = invitePassword;
@@ -74,7 +74,7 @@ class TranslationChatApp {
       this.render();
       this.setupBeforeUnload();
     } catch (error) {
-      console.error('Initialization error:', error);
+      console.error('❌ 初期化エラー:', error);
       this.showInitError('アプリの初期化に失敗しました。');
     }
   }
@@ -227,7 +227,7 @@ class TranslationChatApp {
       );
       this.setState({ isTranslating: false });
     } catch (error) {
-      console.error('メッセージ送信エラー:', error);
+      console.error('❌ メッセージ送信エラー:', error);
       this.setState({ isTranslating: false });
       this.showError('メッセージの送信に失敗しました');
     }
@@ -371,8 +371,8 @@ class TranslationChatApp {
         <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
           <div class="flex items-center justify-between mb-6">
             <div>
-              <h1 class="text-3xl font-bold text-gray-800">🌐 翻訳チャット</h1>
-              <p class="text-sm text-blue-600 mt-2">${isInviteMode ? '🎉 招待リンクから参加' : '🌐 LibreTranslate搭載'}</p>
+              <h1 class="text-3xl font-bold text-gray-800">🌍 翻訳チャット</h1>
+              <p class="text-sm text-blue-600 mt-2">${isInviteMode ? '🎉 招待リンクから参加' : '💬 MyMemory搭載'}</p>
             </div>
             ${!isInviteMode ? `<button id="btn-admin-logout" class="text-sm text-gray-500 hover:text-red-600 transition-colors" title="管理者ログアウト">🚪 ログアウト</button>` : ''}
           </div>
@@ -385,7 +385,7 @@ class TranslationChatApp {
           ${success ? `<div class="mb-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">${success}</div>` : ''}
           ${isInviteMode || loginTab === 'login' ? `
             <div class="space-y-4">
-              ${isInviteMode ? `<div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800"><p class="font-medium mb-1">📧 招待リンクから参加中</p><p class="text-xs">ルーム情報は自動入力されています</p></div>` : ''}
+              ${isInviteMode ? `<div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800"><p class="font-medium mb-1">🔗 招待リンクから参加中</p><p class="text-xs">ルーム情報は自動入力されています</p></div>` : ''}
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">ルームID</label>
                 <input type="text" id="roomId" value="${roomId}" class="w-full px-4 py-2 border border-gray-300 rounded-lg ${isInviteMode ? 'bg-gray-100' : ''}" placeholder="例: room123" ${isInviteMode ? 'readonly' : ''}>
@@ -428,7 +428,7 @@ class TranslationChatApp {
         <div class="bg-indigo-600 text-white p-4 shadow-lg">
           <div class="max-w-4xl mx-auto flex items-center justify-between">
             <div>
-              <h2 class="font-bold text-lg">ルーム: ${roomId} <span class="text-xs bg-blue-500 px-2 py-1 rounded ml-2">🌐 LibreTranslate</span></h2>
+              <h2 class="font-bold text-lg">ルーム: ${roomId} <span class="text-xs bg-blue-500 px-2 py-1 rounded ml-2">💬 MyMemory</span></h2>
               <p class="text-sm text-indigo-200">${userName} (${langName}) • ${roomUsers.length}人参加中</p>
             </div>
             <div class="flex gap-2">
@@ -439,12 +439,12 @@ class TranslationChatApp {
           </div>
         </div>
         ${roomUsers.length < 2 ? '<div class="bg-yellow-50 border-b border-yellow-200 p-3 text-center text-yellow-800 text-sm">相手の参加を待っています... (1/2人)</div>' : ''}
-        ${isTranslating ? '<div class="bg-purple-50 border-b border-purple-200 p-3 text-center text-purple-700 text-sm">🌐 LibreTranslateで翻訳中...</div>' : ''}
+        ${isTranslating ? '<div class="bg-purple-50 border-b border-purple-200 p-3 text-center text-purple-700 text-sm">💬 MyMemoryで翻訳中...</div>' : ''}
         ${error ? `<div class="bg-red-50 border-b border-red-200 p-3 text-center text-red-700 text-sm">${error}</div>` : ''}
         ${success ? `<div class="bg-green-50 border-b border-green-200 p-3 text-center text-green-700 text-sm">${success}</div>` : ''}
         <div class="flex-1 overflow-y-auto p-4" id="messages-container">
           <div class="max-w-4xl mx-auto space-y-4">
-            ${messages.length === 0 ? `<div class="text-center text-gray-500 py-12"><div class="text-6xl mb-4">💬</div><p class="text-lg font-medium">まだメッセージがありません</p><p class="text-sm mt-2">LibreTranslateが自然な翻訳で会話をサポートします！</p></div>` : messages.map(msg => {
+            ${messages.length === 0 ? `<div class="text-center text-gray-500 py-12"><div class="text-6xl mb-4">💬</div><p class="text-lg font-medium">まだメッセージがありません</p><p class="text-sm mt-2">MyMemoryが世界最大の翻訳メモリで会話をサポートします！</p></div>` : messages.map(msg => {
               const isOwn = msg.sender === userName;
               return `<div class="flex ${isOwn ? 'justify-end' : 'justify-start'}"><div class="max-w-xs lg:max-w-md rounded-2xl p-4 ${isOwn ? 'bg-indigo-600 text-white' : 'bg-white text-gray-800 shadow-md'}"><div class="font-medium text-sm mb-1">${msg.sender}</div><div class="break-words whitespace-pre-wrap">${isOwn ? msg.originalText : msg.translatedText}</div>${!isOwn && msg.originalText !== msg.translatedText ? `<div class="text-xs mt-2 pt-2 border-t ${isOwn ? 'border-indigo-400 text-indigo-200' : 'border-gray-200 text-gray-500'}">原文: <span class="whitespace-pre-wrap">${msg.originalText}</span></div>` : ''}<div class="text-xs mt-2 ${isOwn ? 'text-indigo-200' : 'text-gray-400'}">${msg.timestamp ? new Date(msg.timestamp).toLocaleString('ja-JP', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}</div></div></div>`;
             }).join('')}
@@ -455,10 +455,10 @@ class TranslationChatApp {
             ${roomUsers.length < 2 ? '<div class="mb-2 text-center text-sm text-yellow-700 bg-yellow-50 py-2 px-4 rounded-lg">⚠️ 相手が参加するまでメッセージは送信できません</div>' : ''}
             <div class="flex gap-2">
               <button id="btn-mic" class="p-3 rounded-lg ${isRecording ? 'bg-red-600 text-white' : 'bg-gray-200 text-gray-700'} ${roomUsers.length < 2 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-300 cursor-pointer'}" ${roomUsers.length < 2 ? 'disabled' : ''} type="button">${isRecording ? '🎙️' : '🎤'}</button>
-              <textarea id="message-input" rows="1" placeholder="${isTranslating ? 'LibreTranslateで翻訳中...' : roomUsers.length < 2 ? '相手の参加を待っています...' : 'メッセージを入力... (Shift+Enterで改行)'}" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg resize-none ${roomUsers.length < 2 || isTranslating ? 'bg-gray-100' : ''}" style="max-height: 120px; overflow-y: auto;" ${roomUsers.length < 2 || isTranslating ? 'disabled' : ''}>${message}</textarea>
+              <textarea id="message-input" rows="1" placeholder="${isTranslating ? 'MyMemoryで翻訳中...' : roomUsers.length < 2 ? '相手の参加を待っています...' : 'メッセージを入力... (Shift+Enterで改行)'}" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg resize-none ${roomUsers.length < 2 || isTranslating ? 'bg-gray-100' : ''}" style="max-height: 120px; overflow-y: auto;" ${roomUsers.length < 2 || isTranslating ? 'disabled' : ''}>${message}</textarea>
               <button id="btn-send" class="bg-indigo-600 text-white p-3 rounded-lg font-bold text-xl flex items-center justify-center min-w-[50px] ${message.trim() && roomUsers.length >= 2 && !isTranslating ? 'hover:bg-indigo-700 cursor-pointer' : 'opacity-50 cursor-not-allowed'}" ${!message.trim() || roomUsers.length < 2 || isTranslating ? 'disabled' : ''} type="button">➤</button>
             </div>
-            <div class="flex items-center justify-between mt-2 text-xs text-gray-500"><span>Enterで送信 • Shift+Enterで改行</span><span>🌐 LibreTranslate • 接続中</span></div>
+            <div class="flex items-center justify-between mt-2 text-xs text-gray-500"><span>Enterで送信 • Shift+Enterで改行</span><span>💬 MyMemory • 接続中</span></div>
           </div>
         </div>
       </div>`;

@@ -504,7 +504,7 @@ class TranslationChatApp {
             <div>
               <h1 class="text-3xl font-bold text-gray-800">🌍 翻訳チャット</h1>
               <p class="text-sm text-blue-600 mt-2">
-                ${isInviteMode ? '🎉 招待リンクから参加' : '🌐 LibreTranslate搭載'}
+                ${isInviteMode ? '🎉 招待リンクから参加' : '🌍 Google翻訳搭載'}
               </p>
             </div>
             ${!isInviteMode ? `
@@ -611,7 +611,7 @@ class TranslationChatApp {
         <div class="bg-indigo-600 text-white p-4 shadow-lg">
           <div class="max-w-4xl mx-auto flex items-center justify-between">
             <div>
-              <h2 class="font-bold text-lg">ルーム: ${roomId} <span class="text-xs bg-blue-500 px-2 py-1 rounded ml-2">🌍 Google翻訳</span></h2>
+              <h2 class="font-bold text-lg">ルーム: ${roomId} <span class="text-xs bg-green-500 px-2 py-1 rounded ml-2">🌐 LibreTranslate</span></h2>
               <p class="text-sm text-indigo-200">${userName} (${langName}) • ${roomUsers.length}人参加中</p>
             </div>
             
@@ -624,7 +624,7 @@ class TranslationChatApp {
         </div>
 
         ${roomUsers.length < 2 ? '<div class="bg-yellow-50 border-b border-yellow-200 p-3 text-center text-yellow-800 text-sm">相手の参加を待っています... (1/2人)</div>' : ''}
-        ${isTranslating ? '<div class="bg-purple-50 border-b border-purple-200 p-3 text-center text-purple-700 text-sm">🌐 LibreTranslateで翻訳中...</div>' : ''}
+        ${isTranslating ? '<div class="bg-purple-50 border-b border-purple-200 p-3 text-center text-purple-700 text-sm">🌍 Google翻訳で翻訳中...</div>' : ''}
         ${error ? `<div class="bg-red-50 border-b border-red-200 p-3 text-center text-red-700 text-sm">${error}</div>` : ''}
         ${success ? `<div class="bg-green-50 border-b border-green-200 p-3 text-center text-green-700 text-sm">${success}</div>` : ''}
 
@@ -634,7 +634,7 @@ class TranslationChatApp {
               <div class="text-center text-gray-500 py-12">
                 <div class="text-6xl mb-4">💬</div>
                 <p class="text-lg font-medium">まだメッセージがありません</p>
-                <p class="text-sm mt-2">LibreTranslateが自然な翻訳で会話をサポートします!</p>
+                <p class="text-sm mt-2">Google翻訳が自然な翻訳で会話をサポートします!</p>
               </div>
             ` : messages.map(msg => {
               const isOwn = msg.sender === userName;
@@ -677,7 +677,7 @@ class TranslationChatApp {
             </div>
             <div class="flex items-center justify-between mt-2 text-xs text-gray-500">
               <span>Enterで送信 • Shift+Enterで改行</span>
-              <span>🌐 LibreTranslate • 接続中</span>
+              <span>🌍 Google翻訳 • 接続中</span>
             </div>
           </div>
         </div>

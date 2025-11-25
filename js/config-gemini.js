@@ -4,7 +4,7 @@ const GEMINI_CONFIG = {
     apiKey: "AIzaSyDjE5GIuuB5no3FJwkbtyBc7ln5wjWr4D8",
     
     // 使用するモデル名
-    model: "gemini-2.5-flash-lite"
+    model: "gemini-2.5-flash-preview-09-2025"
   };
   
   // 設定の検証

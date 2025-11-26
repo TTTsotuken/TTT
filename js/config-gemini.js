@@ -1,11 +1,9 @@
 // Gemini API設定ファイル
+// config-gemini.js
 const GEMINI_CONFIG = {
-    // Gemini APIキーを設定してください
-    apiKey: "AIzaSyDjE5GIuuB5no3FJwkbtyBc7ln5wjWr4D8",
-    
-    // 使用するモデル名
-    model: "gemini-2.5-flash-preview-09-2025"
-  };
+    apiKey: "", // 🔥 完全に削除（空にする）
+    model: "gemini-2.0-flash-exp"
+};
   
   // 設定の検証
   function validateGeminiConfig() {

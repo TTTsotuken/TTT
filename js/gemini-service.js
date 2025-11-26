@@ -2,70 +2,78 @@
 class GeminiService {
   constructor() {
     this.apiUrl = 'https://workernametranslation-api.st324a2112i-takahashi.workers.dev/translate';
-    
-    // 言語コードマッピング
-    this.languageMap = {
-      'ja': 'Japanese',
-      'en': 'English',
-      'ne': 'Nepali',
-      'zh-CN': 'Chinese (Simplified)',
-      'ko': 'Korean',
-      'es': 'Spanish',
-      'fr': 'French',
-      'de': 'German',
-      'it': 'Italian',
-      'pt': 'Portuguese',
-      'ru': 'Russian',
-      'ar': 'Arabic',
-      'hi': 'Hindi',
-      'th': 'Thai',
-      'vi': 'Vietnamese'
-    };
   }
 
   async translate(text, targetLangCode, sourceLangCode = 'auto') {
     try {
-      console.log('Gemini翻訳リクエスト送信:', { text, targetLang: targetLangCode, sourceLang: sourceLangCode });
+      console.log('🌐 Gemini翻訳リクエスト開始:', { 
+        text, 
+        targetLangCode, 
+        sourceLangCode 
+      });
       
-      const targetLangName = this.languageMap[targetLangCode] || targetLangCode;
-      const sourceLangName = this.languageMap[sourceLangCode] || sourceLangCode;
+      // Workersが期待する形式: { text, targetLang }
+      // targetLangは言語コード（ja, en, neなど）
+      const requestBody = {
+        text: text,
+        targetLang: targetLangCode  // 言語コードをそのまま送信
+      };
       
-      // Cloudflare Workersにリクエストを送信
+      console.log('📤 送信データ:', requestBody);
+      
       const response = await fetch(this.apiUrl, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
-        body: JSON.stringify({
-          text: text,
-          targetLang: targetLangName,
-          sourceLang: sourceLangName
-        })
+        body: JSON.stringify(requestBody)
       });
       
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error('Cloudflare Workers APIエラーレスポンス:', errorData);
-        throw new Error(`Translation API error: ${response.status} - ${errorData.error || response.statusText}`);
+        let errorData;
+        const contentType = response.headers.get('content-type');
+        
+        if (contentType && contentType.includes('application/json')) {
+          errorData = await response.json().catch(() => ({}));
+        } else {
+          const textError = await response.text().catch(() => 'Unknown error');
+          errorData = { error: textError, rawError: textError };
+        }
+        
+        console.error('❌ Cloudflare Workers APIエラー詳細:');
+        console.error('  - HTTPステータス:', response.status);
+        console.error('  - エラーデータ:', errorData);
+        console.error('  - レスポンスヘッダー:', [...response.headers.entries()]);
+        
+        throw new Error(`Translation API error: ${response.status} - ${errorData.error || errorData.message || 'Unknown error'}`);
       }
 
       const data = await response.json();
-      console.log('Cloudflare Workers API レスポンス:', data);
+      console.log('✅ Cloudflare Workers API レスポンス:', data);
       
+      // Workersのレスポンス形式: { success: true, translatedText: "...", originalText: "..." }
       const translatedText = data.translatedText;
 
       if (!translatedText) {
+        console.error('❌ レスポンスから翻訳テキストを抽出できませんでした');
+        console.error('レスポンス全体:', JSON.stringify(data, null, 2));
         throw new Error('翻訳結果が取得できませんでした');
       }
       
-      console.log('翻訳完了:', translatedText);
+      console.log('✅ 翻訳完了:', translatedText);
       
-      return translatedText;
+      return translatedText.trim();
     } catch (error) {
-      console.error('翻訳エラー:', error);
+      console.error('❌ 翻訳エラー:', error);
+      console.error('エラーの詳細:', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack
+      });
       
       // エラー時は元のテキストを返す
-      console.warn('Gemini翻訳に失敗したため、元のテキストを返します');
+      console.warn('⚠️ Gemini翻訳に失敗したため、元のテキストを返します');
       return text;
     }
   }

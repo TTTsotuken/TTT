@@ -1,7 +1,7 @@
 // Gemini API設定ファイル
 // config-gemini.js
 const GEMINI_CONFIG = {
-    apiKey: "", // 🔥 完全に削除（空にする）
+    apiKey: "", 
     model: "gemini-2.0-flash"
 };
   

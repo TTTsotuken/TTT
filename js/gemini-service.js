@@ -1,7 +1,7 @@
 // Gemini翻訳サービス
 class GeminiService {
     constructor() {
-      this.apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models';
+      this.functionsUrl = 'https://workernametranslation-api.st324a2112i-takahashi.workers.dev/';
       
       // 言語コードマッピング（GeminiはISO 639-1コードをサポート）
       this.languageMap = {

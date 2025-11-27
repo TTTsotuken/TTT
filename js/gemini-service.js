@@ -9,7 +9,7 @@ class GeminiService {
       console.log('🌐 Gemini翻訳リクエスト開始:', { 
         text, 
         targetLangCode, 
-        sourceLangCode 
+        sourceLangCode
       });
       
       // Workersが期待する形式: { text, targetLang }

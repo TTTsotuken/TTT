@@ -1,7 +1,7 @@
 // Gemini API設定ファイル
 const GEMINI_CONFIG = {
     // Gemini APIキーを設定してください
-    apiKey: "AIzaSyAoJwlln2QY5WpyZYw8UEmxy8zfezR9tp4",
+    apiKey: "",
     
     // 使用するモデル名
     model: "gemini-1.5-flash"

@@ -574,7 +574,7 @@ class TranslationChatApp {
       </div>
     `;
   }
-  renderChatScreen() {
+renderChatScreen() {
     const { messages, roomUsers, message, isRecording, isTranslating, error, success } = this.state;
     const roomId = window.authService.currentRoom?.roomId || '';
     const userName = window.authService.currentUser?.userName || '';
@@ -643,8 +643,9 @@ class TranslationChatApp {
               <textarea 
                 id="message-input" 
                 placeholder="${isTranslating ? '翻訳中...' : roomUsers.length < 2 ? '相手の参加を待っています...' : 'メッセージを入力... (Shift+Enterで改行)'}" 
-                class="flex-1 px-4 py-2 border border-gray-300 rounded-lg resize-none ${roomUsers.length < 2 || isTranslating ? 'bg-gray-100' : ''}" 
-                rows="3"
+                class="flex-1 px-4 py-2 border border-gray-300 rounded-lg resize-none overflow-hidden ${roomUsers.length < 2 || isTranslating ? 'bg-gray-100' : ''}" 
+                rows="1"
+                style="min-height: 42px; max-height: 200px;"
                 ${roomUsers.length < 2 || isTranslating ? 'disabled' : ''}>${message}</textarea>
               <button id="btn-send" class="bg-indigo-600 text-white p-3 rounded-lg hover:bg-indigo-700 flex-shrink-0 ${!message.trim() || roomUsers.length < 2 || isTranslating ? 'opacity-50 cursor-not-allowed' : ''}" ${!message.trim() || roomUsers.length < 2 || isTranslating ? 'disabled' : ''}>
                 ➤
@@ -746,12 +747,21 @@ class TranslationChatApp {
     const btnCopyLink = document.getElementById('btn-copy-link');
 
     if (messageInput) {
+      // 自動高さ調整関数
+      const autoResize = () => {
+        messageInput.style.height = 'auto';
+        messageInput.style.height = Math.min(messageInput.scrollHeight, 200) + 'px';
+      };
+
       // textareaのinputイベントで状態を更新
       messageInput.addEventListener('input', (e) => {
         this.state.message = e.target.value;
-        // 送信ボタンの状態を更新するために再レンダリング
+        autoResize();
         this.updateSendButtonState();
       });
+
+      // 初期高さ設定
+      autoResize();
 
       // Enterキーで送信、Shift+Enterで改行
       messageInput.addEventListener('keydown', (e) => {

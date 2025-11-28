@@ -782,7 +782,13 @@ class TranslationChatApp {
     }
 
     if (btnLogout) {
-      btnLogout.addEventListener('click', () => this.handleLogout());
+      //btnLogout.addEventListener('click', () => this.handleLogout());
+      btnLogout.addEventListener('click', () => {
+        // 確認ダイアログを追加
+        if (window.confirm('本当にログアウトしますか？')) {
+          this.handleLogout();
+        }
+      });
     }
 
     if (btnCopyLink) {

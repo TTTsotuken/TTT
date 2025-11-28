@@ -574,6 +574,7 @@ class TranslationChatApp {
       </div>
     `;
   }
+  
 renderChatScreen() {
     const { messages, roomUsers, message, isRecording, isTranslating, error, success } = this.state;
     const roomId = window.authService.currentRoom?.roomId || '';
@@ -645,7 +646,7 @@ renderChatScreen() {
                 placeholder="${isTranslating ? '翻訳中...' : roomUsers.length < 2 ? '相手の参加を待っています...' : 'メッセージを入力... (Shift+Enterで改行)'}" 
                 class="flex-1 px-4 py-2 border border-gray-300 rounded-lg resize-none overflow-hidden ${roomUsers.length < 2 || isTranslating ? 'bg-gray-100' : ''}" 
                 rows="1"
-                style="min-height: 42px; max-height: 200px;"
+                style="height: 42px; min-height: 42px; max-height: 200px; line-height: 1.5;"
                 ${roomUsers.length < 2 || isTranslating ? 'disabled' : ''}>${message}</textarea>
               <button id="btn-send" class="bg-indigo-600 text-white p-3 rounded-lg hover:bg-indigo-700 flex-shrink-0 ${!message.trim() || roomUsers.length < 2 || isTranslating ? 'opacity-50 cursor-not-allowed' : ''}" ${!message.trim() || roomUsers.length < 2 || isTranslating ? 'disabled' : ''}>
                 ➤
@@ -749,8 +750,14 @@ renderChatScreen() {
     if (messageInput) {
       // 自動高さ調整関数
       const autoResize = () => {
-        messageInput.style.height = 'auto';
-        messageInput.style.height = Math.min(messageInput.scrollHeight, 200) + 'px';
+        // まず高さをリセット
+        messageInput.style.height = '42px';
+        
+        // 内容がある場合のみ、スクロール高さに合わせて調整
+        if (messageInput.value) {
+          const newHeight = Math.min(messageInput.scrollHeight, 200);
+          messageInput.style.height = newHeight + 'px';
+        }
       };
 
       // textareaのinputイベントで状態を更新

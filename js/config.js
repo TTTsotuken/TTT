@@ -1,6 +1,6 @@
 // 設定ファイル
 const CONFIG = {
-  // Firebase設定(Firebase Consoleから取得)
+  // Firebase設定
   firebase: {
     apiKey: "AIzaSyDLsRsitmY4uPX6a_-RTtq1X1EfQW4L7Uw",
     authDomain: "translation-chat-561ae.firebaseapp.com",

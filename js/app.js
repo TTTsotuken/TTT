@@ -17,7 +17,8 @@ class TranslationChatApp {
       isRecording: false,
       isTranslating: false,
       error: '',
-      success: ''
+      success: '',
+      showSettings: false  // 🆕 設定モーダルの表示状態
     };
     
     this.inactivityTimer = null;
@@ -124,7 +125,7 @@ class TranslationChatApp {
   setupBeforeUnload() {
     window.addEventListener('beforeunload', () => {
       if (window.authService.currentRoom && window.authService.currentUser) {
-        window.authService.leaveRoom();
+        window.authService.leaveRoom(window.roomSettings.autoDeleteEmpty);  // 🆕 設定を渡す
       }
     });
   }
@@ -175,7 +176,7 @@ class TranslationChatApp {
     
     if (window.authService.currentRoom) {
       window.chatService.unwatchAll();
-      await window.authService.leaveRoom();
+      await window.authService.leaveRoom(window.roomSettings.autoDeleteEmpty);  // 🆕 設定を渡す
     }
     
     if (this.inactivityTimer) {
@@ -199,7 +200,8 @@ class TranslationChatApp {
       isRecording: false,
       isTranslating: false,
       error: '',
-      success: 'ログアウトしました'
+      success: 'ログアウトしました',
+      showSettings: false
     };
     
     this.render();
@@ -284,6 +286,7 @@ class TranslationChatApp {
       this.showError('メッセージの送信に失敗しました');
     }
   }
+
   startRecording() {
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
       this.showError('お使いのブラウザは音声認識に対応していません');
@@ -327,7 +330,7 @@ class TranslationChatApp {
 
   async handleLogout() {
     window.chatService.unwatchAll();
-    await window.authService.leaveRoom();
+    await window.authService.leaveRoom(window.roomSettings.autoDeleteEmpty);  // 🆕 設定を渡す
     
     if (this.inactivityTimer) {
       clearTimeout(this.inactivityTimer);
@@ -398,6 +401,23 @@ class TranslationChatApp {
     } catch (error) {
       this.showError('メッセージの削除に失敗しました');
     }
+  }
+
+  // 🆕 設定トグルメソッド
+  toggleSettings() {
+    this.setState({ showSettings: !this.state.showSettings });
+  }
+
+  // 🆕 即時削除設定のトグル
+  toggleAutoDeleteEmpty() {
+    window.roomSettings.autoDeleteEmpty = !window.roomSettings.autoDeleteEmpty;
+    this.showSuccess(
+      window.roomSettings.autoDeleteEmpty 
+        ? '✅ 空ルーム即時削除: ON' 
+        : '⏸️ 空ルーム即時削除: OFF（1週間後に削除）'
+    );
+    this.render();  // 再描画して設定を反映
+    console.log(`🔧 空ルーム即時削除設定: ${window.roomSettings.autoDeleteEmpty ? 'ON' : 'OFF'}`);
   }
 
   render() {
@@ -575,8 +595,8 @@ class TranslationChatApp {
     `;
   }
   
-renderChatScreen() {
-    const { messages, roomUsers, message, isRecording, isTranslating, error, success } = this.state;
+  renderChatScreen() {
+    const { messages, roomUsers, message, isRecording, isTranslating, error, success, showSettings } = this.state;
     const roomId = window.authService.currentRoom?.roomId || '';
     const userName = window.authService.currentUser?.userName || '';
     const userLanguage = window.authService.currentUser?.userLanguage || 'ja';
@@ -592,6 +612,7 @@ renderChatScreen() {
             </div>
             
             <div class="flex gap-2">
+              <button id="btn-settings" class="p-2 hover:bg-indigo-700 rounded-lg transition-colors" title="設定">⚙️</button>
               <button id="btn-copy-link" class="p-2 hover:bg-indigo-700 rounded-lg" title="招待リンクをコピー">🔗</button>
               <button id="btn-clear" class="p-2 hover:bg-indigo-700 rounded-lg" title="メッセージ削除">🗑️</button>
               <button id="btn-logout" class="p-2 hover:bg-indigo-700 rounded-lg" title="ログアウト">🚪</button>
@@ -604,241 +625,308 @@ renderChatScreen() {
         ${error ? `<div class="bg-red-50 border-b border-red-200 p-3 text-center text-red-700 text-sm">${error}</div>` : ''}
         ${success ? `<div class="bg-green-50 border-b border-green-200 p-3 text-center text-green-700 text-sm">${success}</div>` : ''}
 
-        <div class="flex-1 overflow-y-auto p-4" id="messages-container">
-          <div class="max-w-4xl mx-auto space-y-4">
-            ${messages.length === 0 ? `
-              <div class="text-center text-gray-500 py-12">
-                <div class="text-6xl mb-4">💬</div>
-                <p class="text-lg font-medium">まだメッセージがありません</p>
-                <p class="text-sm mt-2">AIが自然な翻訳で会話をサポートします!</p>
+        ${showSettings ? `
+          <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" id="settings-overlay">
+            <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md m-4">
+              <div class="flex items-center justify-between mb-6">
+                <h3 class="text-2xl font-bold text-gray-800">⚙️ ルーム設定</h3>
+                <button id="btn-close-settings" class="text-gray-500 hover:text-gray-700 text-3xl leading-none">&times;</button>
               </div>
-            ` : messages.map(msg => {
-              const isOwn = msg.sender === userName;
-              return `
-                <div class="flex ${isOwn ? 'justify-end' : 'justify-start'}">
-                  <div class="max-w-xs lg:max-w-md rounded-2xl p-4 ${isOwn ? 'bg-indigo-600 text-white' : 'bg-white text-gray-800 shadow-md'}">
-                    <div class="font-medium text-sm mb-1">${msg.sender}</div>
-                    <div class="break-words whitespace-pre-wrap">${isOwn ? msg.originalText : msg.translatedText}</div>
-                    ${!isOwn && msg.originalText !== msg.translatedText ? `
-                      <div class="text-xs mt-2 pt-2 border-t ${isOwn ? 'border-indigo-400 text-indigo-200' : 'border-gray-200 text-gray-500'}">
-                        原文: ${msg.originalText}
-                      </div>
-                    ` : ''}
-                    <div class="text-xs mt-2 ${isOwn ? 'text-indigo-200' : 'text-gray-400'}">
-                      ${msg.timestamp ? new Date(msg.timestamp).toLocaleString('ja-JP', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
+              
+              <div class="space-y-4">
+                <div class="bg-gray-50 rounded-xl p-5 border border-gray-200">
+                  <div class="flex items-start justify-between mb-3">
+                    <div class="flex-1 pr-4">
+                      <p class="font-bold text-gray-800 text-lg mb-1">空ルーム即時削除</p>
+                      <p class="text-sm text-gray-600">全員退出時にルームを即座に削除します</p>
                     </div>
+                    <button 
+                      id="btn-toggle-auto-delete" 
+                      class="relative inline-flex h-7 w-12 flex-shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none ${window.roomSettings.autoDeleteEmpty ? 'bg-indigo-600' : 'bg-gray-300'}">
+                      <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow-lg transition-transform duration-200 ${window.roomSettings.autoDeleteEmpty ? 'translate-x-6' : 'translate-x-1'}"></span>
+                    </button>
+                  </div>
+                  <div class="mt-3 text-sm ${window.roomSettings.autoDeleteEmpty ? 'text-green-700 bg-green-50 border-green-200' : 'text-gray-700 bg-gray-100 border-gray-200'} px-4 py-3 rounded-lg border">
+                    <span class="font-semibold">${window.roomSettings.autoDeleteEmpty ? '✅ ON' : '⏸️ OFF'}</span> - 
+                    ${window.roomSettings.autoDeleteEmpty ? '退出時に空なら即削除' : '1週間後に自動削除'}
                   </div>
                 </div>
-              `;
-            }).join('')}
-          </div>
-        </div>
 
-        <div class="bg-white border-t border-gray-200 p-4">
-          <div class="max-w-4xl mx-auto">
-            ${roomUsers.length < 2 ? '<div class="mb-2 text-center text-sm text-yellow-700 bg-yellow-50 py-2 px-4 rounded-lg">⚠️ 相手が参加するまでメッセージは送信できません</div>' : ''}
-            <div class="flex gap-2 items-end">
-              <button id="btn-mic" class="p-3 rounded-lg flex-shrink-0 ${isRecording ? 'bg-red-600 text-white' : 'bg-gray-200 text-gray-700'} ${roomUsers.length < 2 ? 'opacity-50 cursor-not-allowed' : ''}" ${roomUsers.length < 2 ? 'disabled' : ''}>
-                ${isRecording ? '🎙️' : '🎤'}
-              </button>
-              <textarea 
-                id="message-input" 
-                placeholder="${isTranslating ? '翻訳中...' : roomUsers.length < 2 ? '相手の参加を待っています...' : 'メッセージを入力... (Shift+Enterで改行)'}" 
-                class="flex-1 px-4 py-2 border border-gray-300 rounded-lg resize-none overflow-hidden ${roomUsers.length < 2 || isTranslating ? 'bg-gray-100' : ''}" 
-                rows="1"
-                style="height: 42px; min-height: 42px; max-height: 200px; line-height: 1.5;"
-                ${roomUsers.length < 2 || isTranslating ? 'disabled' : ''}>${message}</textarea>
-              <button id="btn-send" class="bg-indigo-600 text-white p-3 rounded-lg hover:bg-indigo-700 flex-shrink-0 ${!message.trim() || roomUsers.length < 2 || isTranslating ? 'opacity-50 cursor-not-allowed' : ''}" ${!message.trim() || roomUsers.length < 2 || isTranslating ? 'disabled' : ''}>
-                ➤
-              </button>
-            </div>
-            <div class="flex items-center justify-between mt-2 text-xs text-gray-500">
-              <span>Enterキーで送信 (Shift+Enterで改行)</span>
-              <span>🌐 Gemini AI • 接続中</span>
+                <div class="bg-blue-50 rounded-xl p-4 border border-blue-200">
+                  <p class="
+<function_calls>
+<invoke name="artifacts">
+<parameter name="command">update</parameter>
+<parameter name="id">complete-app-js</parameter>
+<parameter name="old_str">                <div class="bg-blue-50 rounded-xl p-4 border border-blue-200">
+<p class="</parameter>
+<parameter name="new_str">                <div class="bg-blue-50 rounded-xl p-4 border border-blue-200">
+<p class="font-semibold text-blue-800 mb-2 flex items-center">
+<span class="mr-2">💡</span> ヒント
+</p>
+<p class="text-sm text-blue-700">
+OFFにすると、退出後も1週間はルームが残ります。再接続が便利になります。
+</p>
+</div>
+            <div class="bg-yellow-50 rounded-xl p-4 border border-yellow-200">
+              <p class="font-semibold text-yellow-800 mb-2 flex items-center">
+                <span class="mr-2">📅</span> 定期削除について
+              </p>
+              <p class="text-sm text-yellow-700">
+                即時削除をOFFにしても、1週間経過したルームは自動的に削除されます。
+              </p>
             </div>
           </div>
         </div>
       </div>
-    `;
+    ` : ''}
+
+    <div class="flex-1 overflow-y-auto p-4" id="messages-container">
+      <div class="max-w-4xl mx-auto space-y-4">
+        ${messages.length === 0 ? `
+          <div class="text-center text-gray-500 py-12">
+            <div class="text-6xl mb-4">💬</div>
+            <p class="text-lg font-medium">まだメッセージがありません</p>
+            <p class="text-sm mt-2">AIが自然な翻訳で会話をサポートします!</p>
+          </div>
+        ` : messages.map(msg => {
+          const isOwn = msg.sender === userName;
+          return `
+            <div class="flex ${isOwn ? 'justify-end' : 'justify-start'}">
+              <div class="max-w-xs lg:max-w-md rounded-2xl p-4 ${isOwn ? 'bg-indigo-600 text-white' : 'bg-white text-gray-800 shadow-md'}">
+                <div class="font-medium text-sm mb-1">${msg.sender}</div>
+                <div class="break-words whitespace-pre-wrap">${isOwn ? msg.originalText : msg.translatedText}</div>
+                ${!isOwn && msg.originalText !== msg.translatedText ? `
+                  <div class="text-xs mt-2 pt-2 border-t ${isOwn ? 'border-indigo-400 text-indigo-200' : 'border-gray-200 text-gray-500'}">
+                    原文: ${msg.originalText}
+                  </div>
+                ` : ''}
+                <div class="text-xs mt-2 ${isOwn ? 'text-indigo-200' : 'text-gray-400'}">
+                  ${msg.timestamp ? new Date(msg.timestamp).toLocaleString('ja-JP', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>
+
+    <div class="bg-white border-t border-gray-200 p-4">
+      <div class="max-w-4xl mx-auto">
+        ${roomUsers.length < 2 ? '<div class="mb-2 text-center text-sm text-yellow-700 bg-yellow-50 py-2 px-4 rounded-lg">⚠️ 相手が参加するまでメッセージは送信できません</div>' : ''}
+        <div class="flex gap-2 items-end">
+          <button id="btn-mic" class="p-3 rounded-lg flex-shrink-0 ${isRecording ? 'bg-red-600 text-white' : 'bg-gray-200 text-gray-700'} ${roomUsers.length < 2 ? 'opacity-50 cursor-not-allowed' : ''}" ${roomUsers.length < 2 ? 'disabled' : ''}>
+            ${isRecording ? '🎙️' : '🎤'}
+          </button>
+          <textarea 
+            id="message-input" 
+            placeholder="${isTranslating ? '翻訳中...' : roomUsers.length < 2 ? '相手の参加を待っています...' : 'メッセージを入力... (Shift+Enterで改行)'}" 
+            class="flex-1 px-4 py-2 border border-gray-300 rounded-lg resize-none overflow-hidden ${roomUsers.length < 2 || isTranslating ? 'bg-gray-100' : ''}" 
+            rows="1"
+            style="height: 42px; min-height: 42px; max-height: 200px; line-height: 1.5;"
+            ${roomUsers.length < 2 || isTranslating ? 'disabled' : ''}>${message}</textarea>
+          <button id="btn-send" class="bg-indigo-600 text-white p-3 rounded-lg hover:bg-indigo-700 flex-shrink-0 ${!message.trim() || roomUsers.length < 2 || isTranslating ? 'opacity-50 cursor-not-allowed' : ''}" ${!message.trim() || roomUsers.length < 2 || isTranslating ? 'disabled' : ''}>
+            ➤
+          </button>
+        </div>
+        <div class="flex items-center justify-between mt-2 text-xs text-gray-500">
+          <span>Enterキーで送信 (Shift+Enterで改行)</span>
+          <span>🌐 Gemini AI • 接続中</span>
+        </div>
+      </div>
+    </div>
+  </div>
+`;
+}
+attachAdminLoginEvents() {
+const emailInput = document.getElementById('admin-email');
+const passwordInput = document.getElementById('admin-password');
+const btnLogin = document.getElementById('btn-admin-login');
+if (emailInput) {
+  emailInput.addEventListener('input', (e) => {
+    this.state.adminEmail = e.target.value;
+  });
+}
+
+if (passwordInput) {
+  passwordInput.addEventListener('input', (e) => {
+    this.state.adminPassword = e.target.value;
+  });
+
+  passwordInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      this.handleAdminLogin();
+    }
+  });
+}
+
+if (btnLogin) {
+  btnLogin.addEventListener('click', () => this.handleAdminLogin());
+}
+}
+attachLoginEvents() {
+document.getElementById('tab-login')?.addEventListener('click', () => {
+this.setState({ loginTab: 'login', error: '', success: '' });
+});
+document.getElementById('tab-delete')?.addEventListener('click', () => {
+  this.setState({ loginTab: 'delete', error: '', success: '', confirmPassword: '' });
+});
+
+document.getElementById('btn-admin-logout')?.addEventListener('click', () => {
+  if (confirm('管理者ログアウトしますか?')) {
+    this.handleAdminLogout();
   }
+});
 
-  attachAdminLoginEvents() {
-    const emailInput = document.getElementById('admin-email');
-    const passwordInput = document.getElementById('admin-password');
-    const btnLogin = document.getElementById('btn-admin-login');
+document.getElementById('roomId')?.addEventListener('input', (e) => {
+  this.state.roomId = e.target.value;
+});
 
-    if (emailInput) {
-      emailInput.addEventListener('input', (e) => {
-        this.state.adminEmail = e.target.value;
-      });
+document.getElementById('password')?.addEventListener('input', (e) => {
+  this.state.password = e.target.value;
+});
+
+document.getElementById('userName')?.addEventListener('input', (e) => {
+  this.state.userName = e.target.value;
+});
+
+document.getElementById('userLanguage')?.addEventListener('change', (e) => {
+  this.state.userLanguage = e.target.value;
+});
+
+document.getElementById('btn-login')?.addEventListener('click', () => this.handleLogin());
+
+document.getElementById('deleteRoomId')?.addEventListener('input', (e) => {
+  this.state.roomId = e.target.value;
+});
+
+document.getElementById('deletePassword')?.addEventListener('input', (e) => {
+  this.state.password = e.target.value;
+});
+
+document.getElementById('confirmPassword')?.addEventListener('input', (e) => {
+  this.state.confirmPassword = e.target.value;
+});
+
+document.getElementById('btn-delete-room')?.addEventListener('click', () => this.handleDeleteRoom());
+}
+attachChatEvents() {
+const messageInput = document.getElementById('message-input');
+const btnSend = document.getElementById('btn-send');
+const btnMic = document.getElementById('btn-mic');
+const btnClear = document.getElementById('btn-clear');
+const btnLogout = document.getElementById('btn-logout');
+const btnCopyLink = document.getElementById('btn-copy-link');
+if (messageInput) {
+  const autoResize = () => {
+    messageInput.style.height = '42px';
+    if (messageInput.value) {
+      const newHeight = Math.min(messageInput.scrollHeight, 200);
+      messageInput.style.height = newHeight + 'px';
     }
+  };
 
-    if (passwordInput) {
-      passwordInput.addEventListener('input', (e) => {
-        this.state.adminPassword = e.target.value;
-      });
+  messageInput.addEventListener('input', (e) => {
+    this.state.message = e.target.value;
+    autoResize();
+    this.updateSendButtonState();
+  });
 
-      passwordInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          this.handleAdminLogin();
-        }
-      });
-    }
+  autoResize();
 
-    if (btnLogin) {
-      btnLogin.addEventListener('click', () => this.handleAdminLogin());
-    }
-  }
-
-  attachLoginEvents() {
-    document.getElementById('tab-login')?.addEventListener('click', () => {
-      this.setState({ loginTab: 'login', error: '', success: '' });
-    });
-    
-    document.getElementById('tab-delete')?.addEventListener('click', () => {
-      this.setState({ loginTab: 'delete', error: '', success: '', confirmPassword: '' });
-    });
-
-    document.getElementById('btn-admin-logout')?.addEventListener('click', () => {
-      if (confirm('管理者ログアウトしますか?')) {
-        this.handleAdminLogout();
-      }
-    });
-
-    document.getElementById('roomId')?.addEventListener('input', (e) => {
-      this.state.roomId = e.target.value;
-    });
-
-    document.getElementById('password')?.addEventListener('input', (e) => {
-      this.state.password = e.target.value;
-    });
-
-    document.getElementById('userName')?.addEventListener('input', (e) => {
-      this.state.userName = e.target.value;
-    });
-
-    document.getElementById('userLanguage')?.addEventListener('change', (e) => {
-      this.state.userLanguage = e.target.value;
-    });
-
-    document.getElementById('btn-login')?.addEventListener('click', () => this.handleLogin());
-
-    document.getElementById('deleteRoomId')?.addEventListener('input', (e) => {
-      this.state.roomId = e.target.value;
-    });
-
-    document.getElementById('deletePassword')?.addEventListener('input', (e) => {
-      this.state.password = e.target.value;
-    });
-
-    document.getElementById('confirmPassword')?.addEventListener('input', (e) => {
-      this.state.confirmPassword = e.target.value;
-    });
-
-    document.getElementById('btn-delete-room')?.addEventListener('click', () => this.handleDeleteRoom());
-  }
-
-  attachChatEvents() {
-    const messageInput = document.getElementById('message-input');
-    const btnSend = document.getElementById('btn-send');
-    const btnMic = document.getElementById('btn-mic');
-    const btnClear = document.getElementById('btn-clear');
-    const btnLogout = document.getElementById('btn-logout');
-    const btnCopyLink = document.getElementById('btn-copy-link');
-
-    if (messageInput) {
-      // 自動高さ調整関数
-      const autoResize = () => {
-        // まず高さをリセット
-        messageInput.style.height = '42px';
-        
-        // 内容がある場合のみ、スクロール高さに合わせて調整
-        if (messageInput.value) {
-          const newHeight = Math.min(messageInput.scrollHeight, 200);
-          messageInput.style.height = newHeight + 'px';
-        }
-      };
-
-      // textareaのinputイベントで状態を更新
-      messageInput.addEventListener('input', (e) => {
-        this.state.message = e.target.value;
-        autoResize();
-        this.updateSendButtonState();
-      });
-
-      // 初期高さ設定
-      autoResize();
-
-      // Enterキーで送信、Shift+Enterで改行
-      messageInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-          e.preventDefault();
-          if (this.state.message.trim() && this.state.roomUsers.length >= 2 && !this.state.isTranslating) {
-            this.handleSendMessage();
-          }
-        }
-      });
-    }
-
-    if (btnSend) {
-      btnSend.addEventListener('click', () => {
-        if (this.state.message.trim() && this.state.roomUsers.length >= 2 && !this.state.isTranslating) {
-          this.handleSendMessage();
-        }
-      });
-    }
-
-    if (btnMic) {
-      btnMic.addEventListener('click', () => {
-        if (this.state.isRecording) {
-          this.stopRecording();
-        } else {
-          this.startRecording();
-        }
-      });
-    }
-
-    if (btnClear) {
-      btnClear.addEventListener('click', () => this.handleClearMessages());
-    }
-
-    if (btnLogout) {
-      btnLogout.addEventListener('click', () => {
-        if (window.confirm('本当にログアウトしますか?')) {
-          this.handleLogout();
-        }
-      });
-    }
-
-    if (btnCopyLink) {
-      btnCopyLink.addEventListener('click', () => this.handleCopyLink());
-    }
-  }
-
-  // 送信ボタンの状態を更新
-  updateSendButtonState() {
-    const btnSend = document.getElementById('btn-send');
-    if (btnSend) {
-      const canSend = this.state.message.trim() && this.state.roomUsers.length >= 2 && !this.state.isTranslating;
-      if (canSend) {
-        btnSend.classList.remove('opacity-50', 'cursor-not-allowed');
-        btnSend.disabled = false;
-      } else {
-        btnSend.classList.add('opacity-50', 'cursor-not-allowed');
-        btnSend.disabled = true;
+  messageInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      if (this.state.message.trim() && this.state.roomUsers.length >= 2 && !this.state.isTranslating) {
+        this.handleSendMessage();
       }
     }
-  }
-  
-  scrollToBottom() {
-    setTimeout(() => {
-      const container = document.getElementById('messages-container');
-      if (container) {
-        container.scrollTop = container.scrollHeight;
-      }
-    }, 100);
-  }
+  });
+}
+
+if (btnSend) {
+  btnSend.addEventListener('click', () => {
+    if (this.state.message.trim() && this.state.roomUsers.length >= 2 && !this.state.isTranslating) {
+      this.handleSendMessage();
+    }
+  });
+}
+
+if (btnMic) {
+  btnMic.addEventListener('click', () => {
+    if (this.state.isRecording) {
+      this.stopRecording();
+    } else {
+      this.startRecording();
+    }
+  });
+}
+
+if (btnClear) {
+  btnClear.addEventListener('click', () => this.handleClearMessages());
+}
+
+if (btnLogout) {
+  btnLogout.addEventListener('click', () => {
+    if (window.confirm('本当にログアウトしますか?')) {
+      this.handleLogout();
+    }
+  });
+}
+
+if (btnCopyLink) {
+  btnCopyLink.addEventListener('click', () => this.handleCopyLink());
+}
+
+// 🆕 設定ボタンのイベント
+const btnSettings = document.getElementById('btn-settings');
+if (btnSettings) {
+  btnSettings.addEventListener('click', () => this.toggleSettings());
+}
+
+// 🆕 設定モーダル関連のイベント
+const btnCloseSettings = document.getElementById('btn-close-settings');
+if (btnCloseSettings) {
+  btnCloseSettings.addEventListener('click', () => this.toggleSettings());
+}
+
+const btnToggleAutoDelete = document.getElementById('btn-toggle-auto-delete');
+if (btnToggleAutoDelete) {
+  btnToggleAutoDelete.addEventListener('click', () => this.toggleAutoDeleteEmpty());
+}
+
+// 🆕 モーダルの外側クリックで閉じる
+const settingsOverlay = document.getElementById('settings-overlay');
+if (settingsOverlay) {
+  settingsOverlay.addEventListener('click', (e) => {
+    if (e.target === settingsOverlay) {
+      this.toggleSettings();
+    }
+  });
+}
+}
+updateSendButtonState() {
+const btnSend = document.getElementById('btn-send');
+if (btnSend) {
+const canSend = this.state.message.trim() && this.state.roomUsers.length >= 2 && !this.state.isTranslating;
+if (canSend) {
+btnSend.classList.remove('opacity-50', 'cursor-not-allowed');
+btnSend.disabled = false;
+} else {
+btnSend.classList.add('opacity-50', 'cursor-not-allowed');
+btnSend.disabled = true;
+}
+}
+}
+scrollToBottom() {
+setTimeout(() => {
+const container = document.getElementById('messages-container');
+if (container) {
+container.scrollTop = container.scrollHeight;
+}
+}, 100);
+}
 }
 
 // アプリ起動

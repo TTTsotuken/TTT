@@ -333,16 +333,12 @@ class TranslationChatApp {
       clearTimeout(this.inactivityTimer);
     }
 
-    // 現在の状態から招待モードかどうかを取得
-    const isInvite = this.state.isInviteMode;
+    const nextScreen = this.state.isInviteMode ? 'login' : 'login';
 
     this.setState({
-      screen: 'login', // 招待モードでも通常でもログイン画面へ
-      
-      // 【修正箇所】招待モードならIDとパスワードを維持し、そうでなければクリアする
-      roomId: isInvite ? this.state.roomId : '',
-      password: isInvite ? this.state.password : '',
-      
+      screen: nextScreen,
+      roomId: '',
+      password: '',
       messages: [],
       roomUsers: [],
       error: ''
@@ -808,12 +804,7 @@ renderChatScreen() {
     }
 
     if (btnLogout) {
-      //btnLogout.addEventListener('click', () => this.handleLogout());
-      btnLogout.addEventListener('click', () => {
-        if (window.confirm('本当にログアウトしますか?')) {
-          this.handleLogout();
-        }
-      });
+      btnLogout.addEventListener('click', () => this.handleLogout());
     }
 
     if (btnCopyLink) {

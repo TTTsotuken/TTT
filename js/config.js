@@ -33,7 +33,7 @@ const CONFIG = {
   
   // アプリ設定
   app: {
-    inactivityTimeout: 10 * 60 * 1000, // 15分
+    inactivityTimeout: 20 * 60 * 1000, // 20分後ログアウト
     maxUsersPerRoom: 2
   }
 };

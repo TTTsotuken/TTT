@@ -93,6 +93,27 @@ class ChatService {
     return unsubscribe;
   }
 
+  // ▼▼▼ 追加: ルーム設定を更新 ▼▼▼
+  async updateRoomSettings(roomId, settings) {
+    // settingsノードを更新（既存の設定をマージ）
+    await firebaseService.update(`rooms/${roomId}/settings`, settings);
+  }
+
+  // ▼▼▼ 追加: ルーム設定を監視 ▼▼▼
+  watchRoomSettings(roomId, callback) {
+    const unsubscribe = firebaseService.onValue(
+      `rooms/${roomId}/settings`,
+      (snapshot) => {
+        const settings = snapshot.val();
+        // データがない場合は空オブジェクトを返す
+        callback(settings || {});
+      }
+    );
+    
+    this.listeners[`settings_${roomId}`] = unsubscribe;
+    return unsubscribe;
+  }
+  
   // 全ての監視を解除
   unwatchAll() {
     Object.values(this.listeners).forEach(unsubscribe => {

@@ -652,7 +652,7 @@ class TranslationChatApp {
                     </button>
                   </div>
                   <div class="text-sm px-3 py-2 rounded ${isAutoDelete ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-700'}">
-                    ✅ ${isAutoDelete ? 'ON - 退出時に空なら即削除' : 'OFF - 1週間後に削除'}
+                    ✅ ${isAutoDelete ? 'ON - 退出時にルームが０人なら即削除' : 'OFF - 1週間後に削除'}
                   </div>
                 </div>
               </div>

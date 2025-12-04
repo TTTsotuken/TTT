@@ -18,7 +18,7 @@ class TranslationChatApp {
       isTranslating: false,
       error: '',
       success: '',
-      showSettings: false  // 🆕 設定モーダルの表示状態
+      showSettings: false
     };
     
     this.inactivityTimer = null;
@@ -125,7 +125,7 @@ class TranslationChatApp {
   setupBeforeUnload() {
     window.addEventListener('beforeunload', () => {
       if (window.authService.currentRoom && window.authService.currentUser) {
-        window.authService.leaveRoom(window.roomSettings.autoDeleteEmpty);  // 🆕 設定を渡す
+        window.authService.leaveRoom(window.roomSettings.autoDeleteEmpty);
       }
     });
   }
@@ -176,7 +176,7 @@ class TranslationChatApp {
     
     if (window.authService.currentRoom) {
       window.chatService.unwatchAll();
-      await window.authService.leaveRoom(window.roomSettings.autoDeleteEmpty);  // 🆕 設定を渡す
+      await window.authService.leaveRoom(window.roomSettings.autoDeleteEmpty);
     }
     
     if (this.inactivityTimer) {
@@ -328,9 +328,9 @@ class TranslationChatApp {
     }
   }
 
-async handleLogout() {
+  async handleLogout() {
     window.chatService.unwatchAll();
-    await window.authService.leaveRoom(window.roomSettings.autoDeleteEmpty);  // 🆕 設定を渡す
+    await window.authService.leaveRoom(window.roomSettings.autoDeleteEmpty);
     
     if (this.inactivityTimer) {
       clearTimeout(this.inactivityTimer);
@@ -338,13 +338,13 @@ async handleLogout() {
 
     const nextScreen = this.state.isInviteMode ? 'login' : 'login';
 
-    // 🔧 招待モードの場合は、ルーム情報を保持したまま退出
+    // 招待モードの場合は、ルーム情報を保持したまま退出
     if (this.state.isInviteMode) {
       this.setState({
         screen: nextScreen,
         messages: [],
         roomUsers: [],
-        userName: '',  // ユーザー名のみリセット
+        userName: '',
         error: ''
       });
     } else {
@@ -357,7 +357,29 @@ async handleLogout() {
         error: ''
       });
     }
-}
+  }
+
+  async handleDeleteRoom() {
+    const { roomId, password, confirmPassword } = this.state;
+
+    if (!roomId || !password || !confirmPassword) {
+      this.showError('全ての項目を入力してください');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      this.showError('パスワードが一致しません');
+      return;
+    }
+
+    try {
+      await window.authService.deleteRoom(roomId, password);
+      this.showSuccess('ルームを削除しました');
+      this.setState({ roomId: '', password: '', confirmPassword: '' });
+    } catch (error) {
+      this.showError(error.message);
+    }
+  }
 
   async handleCopyLink() {
     const roomId = window.authService.currentRoom?.roomId;
@@ -392,12 +414,10 @@ async handleLogout() {
     }
   }
 
-  // 🆕 設定トグルメソッド
   toggleSettings() {
     this.setState({ showSettings: !this.state.showSettings });
   }
 
-  // 🆕 即時削除設定のトグル
   toggleAutoDeleteEmpty() {
     window.roomSettings.autoDeleteEmpty = !window.roomSettings.autoDeleteEmpty;
     this.showSuccess(
@@ -405,7 +425,7 @@ async handleLogout() {
         ? '✅ 空ルーム即時削除: ON' 
         : '⏸️ 空ルーム即時削除: OFF（1週間後に削除）'
     );
-    this.render();  // 再描画して設定を反映
+    this.render();
     console.log(`🔧 空ルーム即時削除設定: ${window.roomSettings.autoDeleteEmpty ? 'ON' : 'OFF'}`);
   }
 
@@ -517,7 +537,7 @@ async handleLogout() {
             <div class="space-y-4">
               ${isInviteMode ? `
                 <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
-                  <p class="font-medium mb-1">📧 招待リンクから参加中</p>
+                  <p class="font-medium mb-1">🔗 招待リンクから参加中</p>
                   <p class="text-xs">ルーム情報は自動入力されています</p>
                 </div>
               ` : ''}
@@ -615,91 +635,63 @@ async handleLogout() {
         ${success ? `<div class="bg-green-50 border-b border-green-200 p-3 text-center text-green-700 text-sm">${success}</div>` : ''}
 
         ${showSettings ? `
-          <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" id="settings-overlay">
-            <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md m-4">
-              <div class="flex items-center justify-between mb-6">
-                <h3 class="text-2xl font-bold text-gray-800">⚙️ ルーム設定</h3>
-                <button id="btn-close-settings" class="text-gray-500 hover:text-gray-700 text-3xl leading-none">&times;</button>
+          <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" id="settings-overlay">
+            <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="text-xl font-bold text-gray-800">⚙️ 設定</h3>
+                <button id="btn-close-settings" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
               </div>
               
-              <div class="space-y-4">
-                <div class="bg-gray-50 rounded-xl p-5 border border-gray-200">
-                  <div class="flex items-start justify-between mb-3">
-                    <div class="flex-1 pr-4">
-                      <p class="font-bold text-gray-800 text-lg mb-1">空ルーム即時削除</p>
-                      <p class="text-sm text-gray-600">全員退出時にルームを即座に削除します</p>
-                    </div>
-                    <button 
-                      id="btn-toggle-auto-delete" 
-                      class="relative inline-flex h-7 w-12 flex-shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none ${window.roomSettings.autoDeleteEmpty ? 'bg-indigo-600' : 'bg-gray-300'}">
-                      <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow-lg transition-transform duration-200 ${window.roomSettings.autoDeleteEmpty ? 'translate-x-6' : 'translate-x-1'}"></span>
-                    </button>
+              <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <p class="font-medium text-gray-800">空ルーム即時削除</p>
+                    <p class="text-xs text-gray-500 mt-1">
+                      ${window.roomSettings.autoDeleteEmpty ? '退出時に即削除' : '1週間後に削除'}
+                    </p>
                   </div>
-                  <div class="mt-3 text-sm ${window.roomSettings.autoDeleteEmpty ? 'text-green-700 bg-green-50 border-green-200' : 'text-gray-700 bg-gray-100 border-gray-200'} px-4 py-3 rounded-lg border">
-                    <span class="font-semibold">${window.roomSettings.autoDeleteEmpty ? '✅ ON' : '⏸️ OFF'}</span> - 
-                    ${window.roomSettings.autoDeleteEmpty ? '退出時に空なら即削除' : '1週間後に自動削除'}
-                  </div>
-                </div>
-
-                <div class="bg-blue-50 rounded-xl p-4 border border-blue-200">
-                  <p class="
-<function_calls>
-<invoke name="artifacts">
-<parameter name="command">update</parameter>
-<parameter name="id">complete-app-js</parameter>
-<parameter name="old_str">                <div class="bg-blue-50 rounded-xl p-4 border border-blue-200">
-<p class="</parameter>
-<parameter name="new_str">                <div class="bg-blue-50 rounded-xl p-4 border border-blue-200">
-<p class="font-semibold text-blue-800 mb-2 flex items-center">
-<span class="mr-2">💡</span> ヒント
-</p>
-<p class="text-sm text-blue-700">
-OFFにすると、退出後も1週間はルームが残ります。再接続が便利になります。
-</p>
-</div>
-            <div class="bg-yellow-50 rounded-xl p-4 border border-yellow-200">
-              <p class="font-semibold text-yellow-800 mb-2 flex items-center">
-                <span class="mr-2">📅</span> 定期削除について
-              </p>
-              <p class="text-sm text-yellow-700">
-                即時削除をOFFにしても、1週間経過したルームは自動的に削除されます。
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    ` : ''}
-
-    <div class="flex-1 overflow-y-auto p-4" id="messages-container">
-      <div class="max-w-4xl mx-auto space-y-4">
-        ${messages.length === 0 ? `
-          <div class="text-center text-gray-500 py-12">
-            <div class="text-6xl mb-4">💬</div>
-            <p class="text-lg font-medium">まだメッセージがありません</p>
-            <p class="text-sm mt-2">AIが自然な翻訳で会話をサポートします!</p>
-          </div>
-        ` : messages.map(msg => {
-          const isOwn = msg.sender === userName;
-          return `
-            <div class="flex ${isOwn ? 'justify-end' : 'justify-start'}">
-              <div class="max-w-xs lg:max-w-md rounded-2xl p-4 ${isOwn ? 'bg-indigo-600 text-white' : 'bg-white text-gray-800 shadow-md'}">
-                <div class="font-medium text-sm mb-1">${msg.sender}</div>
-                <div class="break-words whitespace-pre-wrap">${isOwn ? msg.originalText : msg.translatedText}</div>
-                ${!isOwn && msg.originalText !== msg.translatedText ? `
-                  <div class="text-xs mt-2 pt-2 border-t ${isOwn ? 'border-indigo-400 text-indigo-200' : 'border-gray-200 text-gray-500'}">
-                    原文: ${msg.originalText}
-                  </div>
-                ` : ''}
-                <div class="text-xs mt-2 ${isOwn ? 'text-indigo-200' : 'text-gray-400'}">
-                  ${msg.timestamp ? new Date(msg.timestamp).toLocaleString('ja-JP', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
+                  <button 
+                    id="btn-toggle-auto-delete" 
+                    class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${window.roomSettings.autoDeleteEmpty ? 'bg-indigo-600' : 'bg-gray-300'}">
+                    <span class="inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${window.roomSettings.autoDeleteEmpty ? 'translate-x-6' : 'translate-x-1'}"></span>
+                  </button>
                 </div>
               </div>
             </div>
-          `;
-        }).join('')}
-      </div>
-    </div>
+          </div>
+        ` : ''}
 
+        <div class="flex-1 overflow-y-auto p-4" id="messages-container">
+          <div class="max-w-4xl mx-auto space-y-4">
+            ${messages.length === 0 ? `
+              <div class="text-center text-gray-500 py-12">
+                <div class="text-6xl mb-4">💬</div>
+                <p class="text-lg font-medium">まだメッセージがありません</p>
+                <p class="text-sm mt-2">AIが自然な翻訳で会話をサポートします!</p>
+              </div>
+            ` : messages.map(msg => {
+              const isOwn = msg.sender === userName;
+              return `
+                <div class="flex ${isOwn ? 'justify-end' : 'justify-start'}
+                <function_calls>
+<invoke name="artifacts">
+<parameter name="command">update</parameter>
+<parameter name="id">app-js-fixed</parameter>
+<parameter name="old_str">                <div class="flex ${isOwn ? 'justify-end' : 'justify-start'}</parameter>
+<parameter name="new_str">                <div class="flex ${isOwn ? 'justify-end' : 'justify-start'}">
+<div class="max-w-xs lg:max-w-md rounded-2xl p-4 ${isOwn ? 'bg-indigo-600 text-white' : 'bg-white text-gray-800 shadow-md'}">
+<div class="font-medium text-sm mb-1">${msg.sender}</div>
+<div class="break-words whitespace-pre-wrap">${isOwn ? msg.originalText : msg.translatedText}</div>
+${!isOwn && msg.originalText !== msg.translatedText ?                       <div class="text-xs mt-2 pt-2 border-t ${isOwn ? 'border-indigo-400 text-indigo-200' : 'border-gray-200 text-gray-500'}">                         原文: ${msg.originalText}                       </div>                     : ''}
+<div class="text-xs mt-2 ${isOwn ? 'text-indigo-200' : 'text-gray-400'}">
+${msg.timestamp ? new Date(msg.timestamp).toLocaleString('ja-JP', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
+</div>
+</div>
+</div>
+`;
+}).join('')}
+</div>
+</div>
     <div class="bg-white border-t border-gray-200 p-4">
       <div class="max-w-4xl mx-auto">
         ${roomUsers.length < 2 ? '<div class="mb-2 text-center text-sm text-yellow-700 bg-yellow-50 py-2 px-4 rounded-lg">⚠️ 相手が参加するまでメッセージは送信できません</div>' : ''}
@@ -858,7 +850,7 @@ if (btnClear) {
 
 if (btnLogout) {
   btnLogout.addEventListener('click', () => {
-    if (window.confirm('本当にログアウトしますか?')) {
+    if (window.confirm('本当にルームを退出しますか?')) {
       this.handleLogout();
     }
   });
@@ -868,13 +860,11 @@ if (btnCopyLink) {
   btnCopyLink.addEventListener('click', () => this.handleCopyLink());
 }
 
-// 🆕 設定ボタンのイベント
 const btnSettings = document.getElementById('btn-settings');
 if (btnSettings) {
   btnSettings.addEventListener('click', () => this.toggleSettings());
 }
 
-// 🆕 設定モーダル関連のイベント
 const btnCloseSettings = document.getElementById('btn-close-settings');
 if (btnCloseSettings) {
   btnCloseSettings.addEventListener('click', () => this.toggleSettings());
@@ -885,7 +875,6 @@ if (btnToggleAutoDelete) {
   btnToggleAutoDelete.addEventListener('click', () => this.toggleAutoDeleteEmpty());
 }
 
-// 🆕 モーダルの外側クリックで閉じる
 const settingsOverlay = document.getElementById('settings-overlay');
 if (settingsOverlay) {
   settingsOverlay.addEventListener('click', (e) => {
@@ -917,14 +906,12 @@ container.scrollTop = container.scrollHeight;
 }, 100);
 }
 }
-
-// アプリ起動
 if (window.firebaseServiceReady) {
-  const app = new TranslationChatApp();
-  app.init();
+const app = new TranslationChatApp();
+app.init();
 } else {
-  window.addEventListener('firebaseServiceReady', () => {
-    const app = new TranslationChatApp();
-    app.init();
-  });
+window.addEventListener('firebaseServiceReady', () => {
+const app = new TranslationChatApp();
+app.init();
+});
 }

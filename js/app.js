@@ -676,7 +676,7 @@ class TranslationChatApp {
               const isOwn = msg.sender === userName;
               return `
                 <div class="flex ${isOwn ? 'justify-end' : 'justify-start'}
-                <function_calls>
+<function_calls>
 <invoke name="artifacts">
 <parameter name="command">update</parameter>
 <parameter name="id">app-js-fixed</parameter>
@@ -917,4 +917,4 @@ window.addEventListener('firebaseServiceReady', () => {
 const app = new TranslationChatApp();
 app.init();
 });
-}
+}</parameter>

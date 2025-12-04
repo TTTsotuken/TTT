@@ -93,19 +93,13 @@ class ChatService {
     return unsubscribe;
   }
 
-  // ▼▼▼ 追加: ルーム設定を更新 ▼▼▼
-  async updateRoomSettings(roomId, settings) {
-    // settingsノードを更新（既存の設定をマージ）
-    await firebaseService.update(`rooms/${roomId}/settings`, settings);
-  }
-
-  // ▼▼▼ 追加: ルーム設定を監視 ▼▼▼
+  // ▼▼▼ 追加: 設定の変更を監視 ▼▼▼
   watchRoomSettings(roomId, callback) {
     const unsubscribe = firebaseService.onValue(
       `rooms/${roomId}/settings`,
       (snapshot) => {
         const settings = snapshot.val();
-        // データがない場合は空オブジェクトを返す
+        // データがない場合でも空オブジェクトを返して処理を継続させる
         callback(settings || {});
       }
     );
@@ -113,7 +107,15 @@ class ChatService {
     this.listeners[`settings_${roomId}`] = unsubscribe;
     return unsubscribe;
   }
-  
+
+  // ▼▼▼ 追加: 設定を更新 ▼▼▼
+  async updateRoomSettings(roomId, settings) {
+    // updateメソッドを使って、既存の設定を維持しつつ指定された項目だけ更新
+    // ※ firebaseService に update がない場合は set を使う等の調整が必要ですが、
+    // 通常は update が使えます。
+    return firebaseService.update(`rooms/${roomId}/settings`, settings);
+  }
+
   // 全ての監視を解除
   unwatchAll() {
     Object.values(this.listeners).forEach(unsubscribe => {
@@ -125,4 +127,5 @@ class ChatService {
   }
 }
 
+// インスタンス化
 window.chatService = new ChatService();

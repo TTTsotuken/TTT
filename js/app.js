@@ -250,6 +250,18 @@ class TranslationChatApp {
       this.setState({ roomUsers: users });
     });
 
+    // ▼▼▼ ここを追加: 設定の同期 ▼▼▼
+  window.chatService.watchRoomSettings(roomId, (settings) => {
+    // グローバル設定を更新
+    window.roomSettings = { 
+      autoDeleteEmpty: false, // デフォルト値
+      ...settings             // Firebaseからの値で上書き
+    };
+    
+    // 画面を再描画してトグルスイッチの状態を更新
+    this.render();
+  });
+    
     window.chatService.watchRoom(roomId, (exists) => {
       if (!exists && this.state.screen === 'chat') {
         this.showError('ルームが削除されました。ログアウトします。');
@@ -409,18 +421,33 @@ class TranslationChatApp {
     this.setState({ showSettings: !this.state.showSettings });
   }
 
-  // 追加: 自動削除設定の切り替え
-  toggleAutoDeleteEmpty() {
-    if (window.roomSettings) {
-      window.roomSettings.autoDeleteEmpty = !window.roomSettings.autoDeleteEmpty;
-      this.showSuccess(
-        window.roomSettings.autoDeleteEmpty 
-          ? '✅ 空ルーム即時削除: ON' 
-          : '⏸️ 空ルーム即時削除: OFF'
-      );
-      this.render(); // 設定の状態反映のため再描画
-    }
+async toggleAutoDeleteEmpty() {
+  const roomId = window.authService.currentRoom?.roomId;
+  
+  // 現在の設定を取得（未設定ならfalse）
+  const currentSetting = window.roomSettings?.autoDeleteEmpty || false;
+  
+  // 反転させる
+  const newValue = !currentSetting;
+
+  try {
+    // Firebaseを更新
+    // これにより watchRoomSettings が反応し、相手も自分も自動的に画面が更新されます
+    await window.chatService.updateRoomSettings(roomId, {
+      autoDeleteEmpty: newValue
+    });
+    
+    this.showSuccess(
+      newValue 
+        ? '✅ 空ルーム即時削除: ON にしました' 
+        : '⏸️ 空ルーム即時削除: OFF にしました'
+    );
+    
+  } catch (error) {
+    console.error(error);
+    this.showError('設定の変更に失敗しました');
   }
+}
 
   render() {
     const app = document.getElementById('app');

@@ -328,7 +328,7 @@ class TranslationChatApp {
     }
   }
 
-  async handleLogout() {
+async handleLogout() {
     window.chatService.unwatchAll();
     await window.authService.leaveRoom(window.roomSettings.autoDeleteEmpty);  // 🆕 設定を渡す
     
@@ -338,37 +338,26 @@ class TranslationChatApp {
 
     const nextScreen = this.state.isInviteMode ? 'login' : 'login';
 
-    this.setState({
-      screen: nextScreen,
-      roomId: '',
-      password: '',
-      messages: [],
-      roomUsers: [],
-      error: ''
-    });
-  }
-
-  async handleDeleteRoom() {
-    const { roomId, password, confirmPassword } = this.state;
-
-    if (!roomId || !password || !confirmPassword) {
-      this.showError('全ての項目を入力してください');
-      return;
+    // 🔧 招待モードの場合は、ルーム情報を保持したまま退出
+    if (this.state.isInviteMode) {
+      this.setState({
+        screen: nextScreen,
+        messages: [],
+        roomUsers: [],
+        userName: '',  // ユーザー名のみリセット
+        error: ''
+      });
+    } else {
+      this.setState({
+        screen: nextScreen,
+        roomId: '',
+        password: '',
+        messages: [],
+        roomUsers: [],
+        error: ''
+      });
     }
-
-    if (password !== confirmPassword) {
-      this.showError('パスワードが一致しません');
-      return;
-    }
-
-    try {
-      await window.authService.deleteRoom(roomId, password);
-      this.showSuccess('ルームを削除しました');
-      this.setState({ roomId: '', password: '', confirmPassword: '' });
-    } catch (error) {
-      this.showError(error.message);
-    }
-  }
+}
 
   async handleCopyLink() {
     const roomId = window.authService.currentRoom?.roomId;

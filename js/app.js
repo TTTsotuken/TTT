@@ -638,23 +638,26 @@ class TranslationChatApp {
           <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" id="settings-overlay">
             <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm">
               <div class="flex items-center justify-between mb-4">
-                <h3 class="text-xl font-bold text-gray-800">⚙️ 設定</h3>
+                <h3 class="text-xl font-bold text-gray-800">⚙️ ルーム設定</h3>
                 <button id="btn-close-settings" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
               </div>
               
-              <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                <div class="flex items-center justify-between">
-                  <div>
-                    <p class="font-medium text-gray-800">空ルーム即時削除</p>
-                    <p class="text-xs text-gray-500 mt-1">
-                      ${window.roomSettings.autoDeleteEmpty ? '退出時に即削除' : '1週間後に削除'}
-                    </p>
+              <div class="space-y-3">
+                <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                  <div class="flex items-center justify-between mb-3">
+                    <div>
+                      <p class="font-medium text-gray-800">空ルーム即時削除</p>
+                      <p class="text-xs text-gray-500 mt-1">全員退出時にルームを即座に削除します</p>
+                    </div>
+                    <button 
+                      id="btn-toggle-auto-delete" 
+                      class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${window.roomSettings.autoDeleteEmpty ? 'bg-indigo-600' : 'bg-gray-300'}">
+                      <span class="inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${window.roomSettings.autoDeleteEmpty ? 'translate-x-6' : 'translate-x-1'}"></span>
+                    </button>
                   </div>
-                  <button 
-                    id="btn-toggle-auto-delete" 
-                    class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${window.roomSettings.autoDeleteEmpty ? 'bg-indigo-600' : 'bg-gray-300'}">
-                    <span class="inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${window.roomSettings.autoDeleteEmpty ? 'translate-x-6' : 'translate-x-1'}"></span>
-                  </button>
+                  <div class="text-sm px-3 py-2 rounded ${window.roomSettings.autoDeleteEmpty ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-700'}">
+                    ✅ ${window.roomSettings.autoDeleteEmpty ? 'ON - 退出時に空なら即削除' : 'OFF - 1週間後に削除'}
+                  </div>
                 </div>
               </div>
             </div>
